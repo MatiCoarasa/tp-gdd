@@ -10,8 +10,8 @@ END
 GO
 
 
--- Cada vez que iniciamos, borramos las tablas, así podemos testear tranquilos
--- Las tablas se borran en el orden correcto para evitar conflictos de claves foráneas
+-- Cada vez que iniciamos, borramos las tablas, asï¿½ podemos testear tranquilos
+-- Las tablas se borran en el orden correcto para evitar conflictos de claves forï¿½neas
 
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Productos_del_ticket', 'U') IS NOT NULL 
     DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Productos_del_ticket;
@@ -101,6 +101,16 @@ BEGIN
 END
 
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_sucursales' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
+BEGIN
+    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sucursales;
+END
+
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_envios' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
+BEGIN
+    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sucursales;
+END
+
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_clientes' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
 BEGIN
     DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sucursales;
 END
@@ -369,6 +379,7 @@ BEGIN
 		id_supermercado
 	)
 	SELECT DISTINCT
+        -- podemos modificar asi la data? no podemos migrarlo directamente?
 		CAST(SUBSTRING(S.SUCURSAL_NOMBRE, CHARINDEX(':', S.SUCURSAL_NOMBRE) + 1, LEN(S.SUCURSAL_NOMBRE)) AS INT),
 		S.SUCURSAL_NOMBRE,
 		S.SUCURSAL_DIRECCION,
@@ -387,7 +398,38 @@ BEGIN
 END
 GO
 
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_envios
+AS
+BEGIN
+	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Envio (
+        env_codigo, env_costo, env_fecha_programada, env_hora_inicio, env_hora_fin, env_fecha_hora_entrega, env_estado, env_nro_ticket, envid_nro_cliente
+    )
+END
+GO
+
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_clientes
+AS
+BEGIN
+	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Cliente ()
+END
+GO
+
 
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_supermercados;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_sucursales;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_envios;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_clientes;
+
+
+-- Chris
+-- EMPLEADOS
+-- CATEGORIAS
+-- --SUBCATEGORIAS
+--
+-- MATI
+-- --ENVIOS
+-- --CLIENTES
+--
+-- DANI/MARU
+-- --CorrecciÃ³n DER
 
