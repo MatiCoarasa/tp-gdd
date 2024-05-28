@@ -95,26 +95,37 @@ IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Supermercado', 'U') IS NOT NULL
 GO
 
 -- Borrar los procedures
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_supermercados' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
+IF EXISTS (SELECT 1 FROM sys.procedures WHERE name = 'migrar_supermercados' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
 BEGIN
+    PRINT 'migrar_supermercados exists, dropping...'
     DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_supermercados;
 END
 
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_sucursales' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
 BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sucursales;
-END
-
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_envios' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
+    PRINT 'migrar_sucursales exists, dropping...'
     DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sucursales;
 END
 
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_clientes' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
 BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sucursales;
+    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_clientes;
 END
 
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_envios' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
+BEGIN
+    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_envios;
+END
+
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_reglas_promo' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
+BEGIN
+    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_reglas_promo;
+END
+
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_promos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
+BEGIN
+    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_promos;
+END
 
 
 -- Crear las tablas
@@ -163,7 +174,7 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Empleado (
 GO
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Cliente (
-    clie_codigo DECIMAL(18,0) PRIMARY KEY,
+    clie_codigo DECIMAL(18,0) IDENTITY(1, 1) PRIMARY KEY,
     clie_nombre NVARCHAR(255),
     clie_apellido NVARCHAR(255),
     clie_dni DECIMAL(18,0),
@@ -192,7 +203,7 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Ticket (
 GO
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Envio (
-    env_codigo DECIMAL(18,0) PRIMARY KEY,
+    env_codigo DECIMAL(18,0) IDENTITY (1,1) PRIMARY KEY,
     env_costo DECIMAL(18,2),
     env_fecha_programada DATETIME,
     env_hora_inicio DECIMAL(18,0),
@@ -200,7 +211,7 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Envio (
     env_fecha_hora_entrega DATETIME,
     env_estado NVARCHAR(255),
     env_nro_ticket DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Ticket(ticket_numero),
-    envid_nro_cliente DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Cliente(clie_codigo)
+    env_nro_cliente DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Cliente(clie_codigo)
 );
 GO
 
@@ -215,14 +226,14 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta (
 GO
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Reglas_promo (
-    regla_cod DECIMAL(18,0) PRIMARY KEY,
+    regla_cod DECIMAL(18,0) IDENTITY(1, 1) PRIMARY KEY,
     regla_descripcion NVARCHAR(255),
-    regla_tipo NVARCHAR(255),
-    regla_valor_min DECIMAL(18,2),
-    regla_dias_aplica NVARCHAR(255),
-    regla_monto_dto DECIMAL(18,2),
-    regla_fecha_desde DATETIME,
-    regla_fecha_hasta DATETIME
+    regla_descuento_aplica_prod DECIMAL(18, 2),
+    regla_cant_aplica_regla DECIMAL(18, 0),
+    regla_cant_aplica_desc DECIMAL(18, 0),
+    regla_cant_max DECIMAL(18, 0),
+    regla_aplica_misma_marca DECIMAL(18, 0),
+    regla_aplica_mismo_prod DECIMAL(18, 0)
 );
 GO
 
@@ -398,38 +409,115 @@ BEGIN
 END
 GO
 
-CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_envios
-AS
-BEGIN
-	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Envio (
-        env_codigo, env_costo, env_fecha_programada, env_hora_inicio, env_hora_fin, env_fecha_hora_entrega, env_estado, env_nro_ticket, envid_nro_cliente
-    )
-END
-GO
+-- todo: dependencia de TICKET y CLIENTE
+-- CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_envios
+-- AS
+-- BEGIN
+-- 	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Envio (
+--         env_costo,
+-- 	    env_fecha_programada,
+-- 	    env_hora_inicio,
+-- 	    env_hora_fin,
+-- 	    env_fecha_hora_entrega,
+-- 	    env_estado,
+-- 	    env_nro_ticket,
+-- 	    env_nro_cliente
+--     )
+--     SELECT DISTINCT
+--         m.ENVIO_COSTO,
+--         m.ENVIO_FECHA_PROGRAMADA,
+--         m.ENVIO_HORA_INICIO,
+--         m.ENVIO_HORA_FIN,
+--         m.ENVIO_FECHA_ENTREGA,
+--         m.ENVIO_ESTADO,
+--         m.TICKET_NUMERO,
+--         m.CLIENTE_DNI
+--     FROM gd_esquema.Maestra m
+--     WHERE
+--         m.ENVIO_COSTO IS NOT NULL AND
+--         m.ENVIO_FECHA_PROGRAMADA IS NOT NULL AND
+--         m.ENVIO_HORA_INICIO IS NOT NULL AND
+--         m.ENVIO_HORA_FIN IS NOT NULL AND
+--         m.ENVIO_FECHA_ENTREGA IS NOT NULL AND
+--         m.ENVIO_ESTADO IS NOT NULL;
+-- END
+-- GO
 
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_clientes
 AS
 BEGIN
-	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Cliente ()
+	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Cliente (
+	    clie_nombre,
+	    clie_apellido,
+	    clie_dni,
+	    clie_fecha_registro,
+	    clie_telefono,
+	    clie_mail,
+	    clie_fecha_nacimiento,
+	    clie_domicilio,
+	    clie_localidad,
+	    clie_provincia
+    )
+    SELECT DISTINCT
+        m.CLIENTE_NOMBRE,
+        m.CLIENTE_APELLIDO,
+        m.CLIENTE_DNI,
+        m.CLIENTE_FECHA_REGISTRO,
+        m.CLIENTE_TELEFONO,
+        m.CLIENTE_MAIL,
+        m.CLIENTE_FECHA_NACIMIENTO,
+        m.CLIENTE_DOMICILIO,
+        m.CLIENTE_LOCALIDAD,
+        m.CLIENTE_PROVINCIA
+    FROM gd_esquema.Maestra m
 END
 GO
 
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_reglas_promo
+AS
+BEGIN
+INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Reglas_promo (
+    regla_descripcion,
+    regla_descuento_aplica_prod,
+    regla_cant_aplica_regla,
+    regla_cant_aplica_desc,
+    regla_cant_max,
+    regla_aplica_misma_marca,
+    regla_aplica_mismo_prod
+ )
+ SELECT DISTINCT
+     m.REGLA_DESCRIPCION,
+     m.REGLA_DESCUENTO_APLICABLE_PROD,
+     m.REGLA_CANT_APLICABLE_REGLA,
+     m.REGLA_CANT_APLICA_DESCUENTO,
+     m.REGLA_CANT_MAX_PROD,
+     m.REGLA_APLICA_MISMA_MARCA,
+     m.REGLA_APLICA_MISMO_PROD
+ FROM gd_esquema.Maestra m
+ WHERE
+     m.REGLA_DESCRIPCION IS NOT NULL AND
+     m.REGLA_DESCUENTO_APLICABLE_PROD IS NOT NULL AND
+     m.REGLA_CANT_APLICABLE_REGLA IS NOT NULL AND
+     m.REGLA_CANT_APLICA_DESCUENTO IS NOT NULL AND
+     m.REGLA_CANT_MAX_PROD IS NOT NULL AND
+     m.REGLA_APLICA_MISMA_MARCA IS NOT NULL AND
+     m.REGLA_APLICA_MISMO_PROD IS NOT NULL
+END
+GO
+
+-- CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_promos
+-- AS
+-- BEGIN
+-- 	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Cliente (
+--     )
+--     SELECT DISTINCT
+--     FROM gd_esquema.Maestra m
+-- END
+-- GO
 
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_supermercados;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_sucursales;
-EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_envios;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_clientes;
-
-
--- Chris
--- EMPLEADOS
--- CATEGORIAS
--- --SUBCATEGORIAS
---
--- MATI
--- --ENVIOS
--- --CLIENTES
---
--- DANI/MARU
--- --Corrección DER
-
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_reglas_promo;
+-- EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_envios;
+-- EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_promos;
