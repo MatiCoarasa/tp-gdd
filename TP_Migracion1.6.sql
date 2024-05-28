@@ -177,14 +177,9 @@ BEGIN
     DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_medios_pagos;
 END
 
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_descuentos_medios_pagos1' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_descuentos_medios_pagos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
 BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos1;
-END
-
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_descuentos_medios_pagos2' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos2;
+    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos;
 END
 
 
@@ -732,31 +727,22 @@ END
 GO
 
 
-CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos1
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos
 AS
 BEGIN
-    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Descuentos_medio_pago(
-        descuento__medio_desc_cod
-    )
-    SELECT DISTINCT
-		D.desc_cod
-	FROM CHRISTIAN_Y_LOS_MAKINSONS.Descuento D
-      
-END
-GO
-CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos2
-AS
-BEGIN
-    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Descuentos_medio_pago(
-        descuento__medio_mp_cod
-    )
-    SELECT DISTINCT
+    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Descuentos_medio_pago (descuento__medio_desc_cod, descuento__medio_mp_cod)
+	SELECT
+		D.desc_cod,
 		MP.mp_cod
-	FROM  CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago MP
+	FROM
+		gd_esquema.Maestra M
+	JOIN
+		CHRISTIAN_Y_LOS_MAKINSONS.Descuento D ON M.DESCUENTO_CODIGO = D.desc_cod
+	JOIN
+		CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago MP ON M.PAGO_MEDIO_PAGO = MP.mp_detalle AND M.PAGO_TIPO_MEDIO_PAGO = MP.mp_tipo;
       
 END
 GO
-
 
 
 
@@ -773,9 +759,8 @@ EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_tickets;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_producto;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_medios_pagos;
-EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos1;
-EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos2;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos;
 --EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_ticket;
 
 
