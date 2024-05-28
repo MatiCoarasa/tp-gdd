@@ -1,6 +1,5 @@
-USE GD1C2024;
+ï»¿USE GD1C2024;
 GO
-
 
 -- Crear el esquema si no existe
 IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'CHRISTIAN_Y_LOS_MAKINSONS')
@@ -9,9 +8,8 @@ BEGIN
 END
 GO
 
-
--- Cada vez que iniciamos, borramos las tablas, así podemos testear tranquilos
--- Las tablas se borran en el orden correcto para evitar conflictos de claves foráneas
+-- Cada vez que iniciamos, borramos las tablas, asï¿½ podemos testear tranquilos
+-- Las tablas se borran en el orden correcto para evitar conflictos de claves forï¿½neas
 
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Productos_del_ticket', 'U') IS NOT NULL 
     DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Productos_del_ticket;
@@ -19,6 +17,10 @@ GO
 
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Producto_promo', 'U') IS NOT NULL 
     DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Producto_promo;
+GO
+
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_producto', 'U') IS NOT NULL 
+    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_producto;
 GO
 
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Producto', 'U') IS NOT NULL 
@@ -29,12 +31,12 @@ IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.sub_categorias_de_categoria', 'U') IS NO
     DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.sub_categorias_de_categoria;
 GO
 
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Categoria', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Categoria;
-GO
-
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Sub_categoria', 'U') IS NOT NULL 
     DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Sub_categoria;
+GO
+
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Categoria', 'U') IS NOT NULL 
+    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Categoria;
 GO
 
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.sub_categorias_de_categoria', 'U') IS NOT NULL 
@@ -107,6 +109,7 @@ IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Supermercado', 'U') IS NOT NULL
 GO
 
 
+
 -- Borrar los procedures
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_supermercados' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
 BEGIN
@@ -152,6 +155,45 @@ IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_cajas_de_sucursal' 
 BEGIN
     DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_cajas_de_sucursal;
 END
+
+
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_productos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
+BEGIN
+    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos;
+END
+
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_sub_categorias_de_producto' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
+BEGIN
+    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_producto;
+END
+
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_productos_por_ticket' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
+BEGIN
+    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_ticket;
+END
+
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_medios_pagos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
+BEGIN
+    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_medios_pagos;
+END
+
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_descuentos_medios_pagos1' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
+BEGIN
+    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos1;
+END
+
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_descuentos_medios_pagos2' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
+BEGIN
+    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos2;
+END
+
+
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_descuentos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
+BEGIN
+    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos;
+END
+
+
 
 
 -- Crear las tablas
@@ -278,12 +320,11 @@ GO
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Descuento (
     desc_cod DECIMAL(18,0) PRIMARY KEY,
-    desc_detalle NVARCHAR(255),
-    desc_tipo NVARCHAR(255),
-    desc_valor DECIMAL(18,2),
-    desc_fec_desde DATE,
-    desc_fec_hasta DATE,
-    desc_estado NVARCHAR(255)
+    desc_descripcion NVARCHAR(255),
+    desc_fec_inicio DATE,
+    desc_fec_fin DATE,
+    desc_descuento DECIMAL(18,2),
+	desc_tope DECIMAL(18,2)
 );
 GO
 
@@ -299,16 +340,19 @@ GO
 -- en vez de numero de pago tiene el codigo del medio de pago y asi queda asociado
 -- HAY QUE REFLEJAR ESTO CON EL DER
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago (
-    mp_cod DECIMAL(18,0) PRIMARY KEY,
-    mp_detalle NVARCHAR(255)
+    mp_cod DECIMAL(18,0) PRIMARY KEY IDENTITY(1,1),
+    mp_detalle NVARCHAR(255),
+	mp_tipo NVARCHAR(255),
 );
 GO
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Descuentos_medio_pago (
-    descuento__medio_cod DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Descuento(desc_cod),
-    descuento__medio_pago_cod DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago(mp_cod)
+    descuento__medio_desc_cod DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Descuento(desc_cod),
+    descuento__medio_mp_cod DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago(mp_cod)
 );
 GO
+
+
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Pago (
     pago_nro DECIMAL(18,0) PRIMARY KEY,
@@ -342,17 +386,18 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_categoria (
 GO
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Producto (
-    prod_codigo DECIMAL(18,0) PRIMARY KEY,
-    prod_descripcion NVARCHAR(255),
-    prod_precio DECIMAL(18,2),
-    prod_fecha_alta DATE,
-    prod_fecha_baja DATE,
-    prod_stock DECIMAL(18,0),
-    prod_stock_min DECIMAL(18,0),
-    prod_unidad_medida NVARCHAR(255),
+    prod_codigo DECIMAL(18,0) PRIMARY KEY IDENTITY(1,1),
+	prod_detalle NVARCHAR(255),
+    prod_nombre NVARCHAR(255),
     prod_marca NVARCHAR(255),
-    prod_estado NVARCHAR(255),
+    prod_precio DECIMAL(18,2),
     prod_sub_categoria DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Sub_categoria(sub_cat_cod)
+);
+GO
+
+CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_producto (
+	prod_codigo DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Producto(prod_codigo),
+    prod_sub_categoria DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Sub_categoria(sub_cat_cod),
 );
 GO
 
@@ -484,11 +529,13 @@ CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_categorias
 AS
 BEGIN
 	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Categoria(
-		categoria_cod
+		categoria_cod,
+		categoria_detalle
 	)
 	SELECT DISTINCT 
-	CAST(SUBSTRING(PRODUCTO_CATEGORIA, CHARINDEX('°', PRODUCTO_CATEGORIA) + 1, LEN(PRODUCTO_CATEGORIA)) AS INT)
-	FROM gd_esquema.Maestra
+		CAST(SUBSTRING(M.PRODUCTO_CATEGORIA, CHARINDEX('Â°', M.PRODUCTO_CATEGORIA) + 1, LEN(M.PRODUCTO_CATEGORIA)) AS INT),
+		M.PRODUCTO_CATEGORIA
+	FROM gd_esquema.Maestra M
 	WHERE PRODUCTO_CATEGORIA IS NOT NULL
 END
 GO
@@ -497,11 +544,13 @@ CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias
 AS
 BEGIN
 	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Sub_categoria(
-		sub_cat_cod
+		sub_cat_cod,
+		sub_cat_detalle
 	)
 	SELECT DISTINCT
-	CAST(SUBSTRING(PRODUCTO_SUB_CATEGORIA, CHARINDEX('°', PRODUCTO_SUB_CATEGORIA) + 1, LEN(PRODUCTO_SUB_CATEGORIA)) AS INT)
-	FROM gd_esquema.Maestra 
+		CAST(SUBSTRING(M.PRODUCTO_SUB_CATEGORIA, CHARINDEX('Â°', M.PRODUCTO_SUB_CATEGORIA) + 1, LEN(M.PRODUCTO_SUB_CATEGORIA)) AS INT),
+		M.PRODUCTO_SUB_CATEGORIA
+	FROM gd_esquema.Maestra M
 	WHERE PRODUCTO_SUB_CATEGORIA IS NOT NULL 
 
 END
@@ -515,8 +564,8 @@ BEGIN
 		sub_cat_cod_categoria
 	)
 	SELECT DISTINCT 
-	CAST(SUBSTRING(PRODUCTO_CATEGORIA, CHARINDEX('°', PRODUCTO_CATEGORIA) + 1, LEN(PRODUCTO_CATEGORIA)) AS INT),
-	CAST(SUBSTRING(PRODUCTO_SUB_CATEGORIA, CHARINDEX('°', PRODUCTO_SUB_CATEGORIA) + 1, LEN(PRODUCTO_SUB_CATEGORIA)) AS INT) 
+	CAST(SUBSTRING(PRODUCTO_CATEGORIA, CHARINDEX('Â°', PRODUCTO_CATEGORIA) + 1, LEN(PRODUCTO_CATEGORIA)) AS INT),
+	CAST(SUBSTRING(PRODUCTO_SUB_CATEGORIA, CHARINDEX('Â°', PRODUCTO_SUB_CATEGORIA) + 1, LEN(PRODUCTO_SUB_CATEGORIA)) AS INT) 
 	FROM gd_esquema.Maestra
 	WHERE PRODUCTO_SUB_CATEGORIA IS NOT NULL 
 END
@@ -590,6 +639,128 @@ BEGIN
 END
 GO
 
+
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos
+AS
+BEGIN
+	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Producto(
+		prod_detalle,
+		prod_nombre,
+		prod_marca,
+		prod_precio,
+		prod_sub_categoria 
+	)
+	SELECT DISTINCT
+		M.PRODUCTO_DESCRIPCION,
+		M.PRODUCTO_NOMBRE,
+		M.PRODUCTO_MARCA,
+		M.PRODUCTO_PRECIO,
+		CAST(SUBSTRING(M.PRODUCTO_SUB_CATEGORIA, CHARINDEX('Â°', M.PRODUCTO_SUB_CATEGORIA) + 1, LEN(M.PRODUCTO_SUB_CATEGORIA)) AS INT)
+	FROM gd_esquema.Maestra M
+	WHERE CAST(SUBSTRING(M.PRODUCTO_NOMBRE, CHARINDEX(':', M.PRODUCTO_NOMBRE) + 1, LEN(M.PRODUCTO_NOMBRE)) AS BIGINT) IS NOT NULL
+END
+GO
+
+
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_producto
+AS
+BEGIN
+	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_producto(
+		prod_codigo,
+		prod_sub_categoria
+	)
+	SELECT DISTINCT
+		P.prod_codigo,
+		P.prod_sub_categoria
+	FROM producto P
+END
+GO
+
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_medios_pagos
+AS
+BEGIN
+
+    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago(
+        mp_detalle,
+		mp_tipo
+    )
+    SELECT DISTINCT
+        M.PAGO_MEDIO_PAGO,
+        M.PAGO_TIPO_MEDIO_PAGO
+    FROM gd_esquema.Maestra M
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago MP
+        WHERE MP.mp_detalle = M.PAGO_MEDIO_PAGO
+        AND MP.mp_tipo = M.PAGO_TIPO_MEDIO_PAGO
+    );
+END
+GO
+
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos
+AS
+BEGIN
+    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Descuento(
+		desc_cod,
+		desc_descripcion,
+		desc_fec_inicio,
+		desc_fec_fin,
+		desc_descuento,
+		desc_tope
+    )
+    SELECT DISTINCT
+       M.DESCUENTO_CODIGO,
+       M.DESCUENTO_DESCRIPCION,
+	   M.DESCUENTO_FECHA_INICIO,
+	   M.DESCUENTO_FECHA_FIN,
+	   M.DESCUENTO_PORCENTAJE_DESC,
+	   M.DESCUENTO_TOPE
+    FROM gd_esquema.Maestra M
+    WHERE 
+		M.DESCUENTO_CODIGO IS NOT NULL  -- Agregamos esta condiciÃ³n para evitar valores nulos de M.DESCUENTO_CODIGO
+	AND NOT EXISTS (
+        SELECT 1
+        FROM CHRISTIAN_Y_LOS_MAKINSONS.Descuento D
+        WHERE D.desc_cod = M.DESCUENTO_CODIGO
+		AND D.desc_cod = M.DESCUENTO_CODIGO
+		AND D.desc_fec_inicio = M.DESCUENTO_FECHA_INICIO
+		AND D.desc_fec_fin = M.DESCUENTO_FECHA_FIN
+		AND D.desc_descuento = M.DESCUENTO_PORCENTAJE_DESC
+		AND D.desc_tope = M.DESCUENTO_TOPE
+    );
+END
+GO
+
+
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos1
+AS
+BEGIN
+    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Descuentos_medio_pago(
+        descuento__medio_desc_cod
+    )
+    SELECT DISTINCT
+		D.desc_cod
+	FROM CHRISTIAN_Y_LOS_MAKINSONS.Descuento D
+      
+END
+GO
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos2
+AS
+BEGIN
+    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Descuentos_medio_pago(
+        descuento__medio_mp_cod
+    )
+    SELECT DISTINCT
+		MP.mp_cod
+	FROM  CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago MP
+      
+END
+GO
+
+
+
+
+--ejecutamos procedures
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_supermercados;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_sucursales;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_empleados;
@@ -599,6 +770,25 @@ EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_categoria;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_cajas;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_cajas_de_sucursal;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_tickets;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_producto;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_medios_pagos;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos1;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos2;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos;
+--EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_ticket;
+
+
+--SELECT DISTINCT
+--        D.desc_cod,
+--        MP.mp_cod
+--    FROM CHRISTIAN_Y_LOS_MAKINSONS.Descuento D
+--    CROSS JOIN CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago MP
+
+
+
+
+
 -- EMPLEADOS/CATEGORIAS/SUBCATEGORIAS/CAJA (CHRIS) -- Hecho 
 -- Tarjeta (CHRIS) -- OnGoing
 -- ENVIOS/CLIENTES/ (MATI)
@@ -613,3 +803,9 @@ EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_tickets;
 --como un ejemlo puede pensarse productos lacteos y productos derivado animal y las subcategorias leches y quesos. Tanto la leche como el queso puede ser producto derivado animal o lacteos. 
 --Mas aun la leche y el queso podrian corresponder a productos derivado no animal (existe la leche y el queso de vaca, de cabra, de coco y soja, etc.)
 
+
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Caja
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.cajas_de_sucursal
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Categoria
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Sub_categoria
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_categoria
