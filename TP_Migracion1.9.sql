@@ -219,11 +219,11 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Pago (
     pago_total DECIMAL(18,2),
     pago_cant_cuotas DECIMAL(18,0),
     pago_fecha_hora DATETIME,
-	pago_medio NVARCHAR(255) null,
-    --pago_medio DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago(mp_cod),
+	--pago_medio NVARCHAR(255) null,
+    pago_medio DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago(mp_cod),
     pago_nro_ticket INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Ticket(ticket_id),
-	pago_descuento DECIMAL(18,0)
-    --pago_descuento DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Descuento(desc_cod)
+	--pago_descuento DECIMAL(18,0)
+    pago_descuento DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Descuento(desc_cod)
 );
 GO
 
@@ -678,7 +678,6 @@ GO
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_medios_pagos
 AS
 BEGIN
-
     INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago(
         mp_detalle,
 		mp_tipo
@@ -717,7 +716,7 @@ BEGIN
 	   M.DESCUENTO_TOPE
     FROM gd_esquema.Maestra M
     WHERE 
-		M.DESCUENTO_CODIGO IS NOT NULL  -- Agregamos esta condición para evitar valores nulos de M.DESCUENTO_CODIGO
+		M.DESCUENTO_CODIGO IS NOT NULL
 	AND NOT EXISTS (
         SELECT 1
         FROM CHRISTIAN_Y_LOS_MAKINSONS.Descuento D
@@ -734,17 +733,16 @@ GO
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos
 AS
 BEGIN
-    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Descuentos_medio_pago (descuento__medio_desc_cod, descuento__medio_mp_cod)
+    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Descuentos_medio_pago (
+		descuento__medio_desc_cod,
+		descuento__medio_mp_cod
+	)
 	SELECT
 		D.desc_cod,
 		MP.mp_cod
-	FROM
-		gd_esquema.Maestra M
-	JOIN
-		CHRISTIAN_Y_LOS_MAKINSONS.Descuento D ON M.DESCUENTO_CODIGO = D.desc_cod
-	JOIN
-		CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago MP ON M.PAGO_MEDIO_PAGO = MP.mp_detalle AND M.PAGO_TIPO_MEDIO_PAGO = MP.mp_tipo;
-      
+	FROM gd_esquema.Maestra M
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.Descuento D ON M.DESCUENTO_CODIGO = D.desc_cod
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago MP ON M.PAGO_MEDIO_PAGO = MP.mp_detalle AND M.PAGO_TIPO_MEDIO_PAGO = MP.mp_tipo;
 END
 GO
 
@@ -796,7 +794,7 @@ GO
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_pagos
 AS
 BEGIN
-	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Pago (
+	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Pago(
 	    pago_tarjeta_nro,
 	    pago_total,
 	    pago_cant_cuotas,
@@ -806,16 +804,23 @@ BEGIN
 		pago_descuento
     )
     SELECT DISTINCT 
-	   P.PAGO_TARJETA_NRO,
-	   P.PAGO_IMPORTE,
-	   P.PAGO_TARJETA_CUOTAS,
-	   P.PAGO_FECHA,
-	   P.PAGO_MEDIO_PAGO,
-	   T.ticket_id,
-	   P.PAGO_DESCUENTO_APLICADO
-	   FROM gd_esquema.Maestra AS P JOIN CHRISTIAN_Y_LOS_MAKINSONS.Ticket AS T ON 
-	   FORMAT(P.PAGO_FECHA, 'yyyy-MM-dd') = FORMAT(T.ticket_fecha_hora_venta, 'yyyy-MM-dd') AND P.PAGO_IMPORTE = T.ticket_total_ticket
-	   WHERE PAGO_IMPORTE IS NOT NULL order by t.ticket_id
+		M.PAGO_TARJETA_NRO,
+	    M.PAGO_IMPORTE,
+	    M.PAGO_TARJETA_CUOTAS,
+	    M.PAGO_FECHA,
+	    MP.mp_cod,
+	    T.ticket_id,
+	    M.PAGO_DESCUENTO_APLICADO
+	FROM gd_esquema.Maestra AS M
+		JOIN CHRISTIAN_Y_LOS_MAKINSONS.Ticket AS T ON 
+	    FORMAT(M.PAGO_FECHA, 'yyyy-MM-dd') = FORMAT(T.ticket_fecha_hora_venta, 'yyyy-MM-dd') AND M.PAGO_IMPORTE = T.ticket_total_ticket
+		JOIN CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago AS MP ON
+			M.PAGO_MEDIO_PAGO = MP.mp_detalle
+		JOIN CHRISTIAN_Y_LOS_MAKINSONS.Descuento AS D ON
+			M.DESCUENTO_CODIGO = D.desc_cod
+	WHERE
+		M.PAGO_IMPORTE IS NOT NULL
+	ORDER BY t.ticket_id
 END
 GO
 
@@ -911,14 +916,14 @@ EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_pagos_tarjeta;
 --select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Descuento
 --select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Promocion
 --select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago
---select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Descuentos_medio_pago
---select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Pago
+select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Descuentos_medio_pago
+select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Pago
 --select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Categoria
 --select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Sub_categoria
 --select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_categoria
 --select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Producto_promo
 --select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Productos_del_ticket
---select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Pago_tarjeta
+select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Pago_tarjeta
 
 ----------------------------------------TABLAS----------------------------------------
 --Supermercado
