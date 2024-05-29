@@ -505,19 +505,30 @@ INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Reglas_promo (
 END
 GO
 
--- CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_promos
--- AS
--- BEGIN
--- 	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Cliente (
---     )
---     SELECT DISTINCT
---     FROM gd_esquema.Maestra m
--- END
--- GO
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_promos
+AS
+BEGIN
+	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Promocion (
+	    promo_cod,
+	    promo_detalle,
+	    promo_fecha_desde,
+	    promo_fecha_hasta,
+	    promo_estado,
+	    promo_cod_regla
+    )
+    SELECT DISTINCT
+        m.PROMO_CODIGO,
+        m.PROMOCION_DESCRIPCION,
+        m.PROMOCION_FECHA_INICIO,
+        m.PROMOCION_FECHA_FIN
+    FROM gd_esquema.Maestra m
+END
+GO
 
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_supermercados;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_sucursales;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_clientes;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_reglas_promo;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_promos;
 -- EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_envios;
--- EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_promos;
+
