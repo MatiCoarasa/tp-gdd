@@ -9,7 +9,7 @@ END
 GO
 
 ----------------------------------------BORRAR TABLAS----------------------------------------
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Productos_por_ticket', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Productos_por_ticket;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Productos_del_ticket', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Productos_del_ticket;
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Producto_promo', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Producto_promo;
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_producto', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_producto;
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Producto', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Producto;
@@ -245,7 +245,7 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_producto (
 );
 GO
 
-CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Productos_por_ticket (
+CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Productos_del_ticket (
     producto_codigo DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Producto(prod_codigo),
     ticket_numero INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Ticket(ticket_id),
     cantidad DECIMAL(18,0),
@@ -783,7 +783,7 @@ EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_categoria;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_producto;
---EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_ticket;
+--EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_del_ticket;
 -- EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_promo;
 --EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_pagos_tarjeta;
 
