@@ -10,7 +10,7 @@ GO
 
 ----------------------------------------BORRAR TABLAS----------------------------------------
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Productos_del_ticket', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Productos_del_ticket;
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Producto_promo', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Producto_promo;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Productos_por_promo', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Productos_por_promo;
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_producto', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_producto;
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Producto', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Producto;
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.sub_categorias_de_categoria', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.sub_categorias_de_categoria;
@@ -43,6 +43,7 @@ IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_categorias' AND sch
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_sub_categorias' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_sub_categorias_de_categoria' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_categoria;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_cajas' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_cajas;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_productos_por_promo' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_promo;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_productos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_sub_categorias_de_producto' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_producto;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_productos_por_ticket' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_ticket;
@@ -253,9 +254,9 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Productos_del_ticket (
 );
 GO
 
-CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Producto_promo (
-    producto_promo_codigo DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Producto(prod_codigo),
-    producto_promo_cod DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Promocion(promo_cod)
+CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Productos_por_promo (
+    prod_promo_prod DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Producto(prod_codigo),
+    prod_promo_promo DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Promocion(promo_cod)
 );
 GO
 
@@ -725,19 +726,29 @@ END
 GO
 
 
--- CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_promo
--- AS
--- BEGIN
---     INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Productos_por_promocion (
---         producto_codigo,
---         ticket_numero,
---         cantidad
---     )
---     SELECT DISTINCT
---         m.producto
---     FROM gd_esquema.Maestra m
--- END
--- GO
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_promo
+AS
+BEGIN
+    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Productos_por_promo (
+        prod_promo_prod,
+        prod_promo_promo
+    )
+    SELECT DISTINCT
+        p.prod_codigo,
+        pr.promo_cod
+    FROM gd_esquema.Maestra m
+    JOIN CHRISTIAN_Y_LOS_MAKINSONS.Producto p ON
+        m.PRODUCTO_NOMBRE = p.prod_nombre AND
+        m.PRODUCTO_DESCRIPCION = p.prod_detalle AND
+        m.PRODUCTO_PRECIO = p.prod_precio AND
+        m.PRODUCTO_MARCA = p.prod_marca
+    JOIN CHRISTIAN_Y_LOS_MAKINSONS.Promocion pr ON
+        m.PROMO_CODIGO = pr.promo_cod AND
+        m.PROMOCION_DESCRIPCION = pr.promo_detalle AND
+        m.PROMOCION_FECHA_INICIO = pr.promo_fecha_desde AND
+        m.PROMOCION_FECHA_FIN = pr.promo_fecha_hasta ;
+END
+GO
 
 
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_tarjetas
@@ -784,7 +795,7 @@ EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_categoria;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_producto;
 --EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_del_ticket;
--- EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_promo;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_promo;
 --EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_pagos_tarjeta;
 
 ----------------------------------------SELECTS PARA TESTEAR----------------------------------------
@@ -831,5 +842,5 @@ EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_producto;
 --Producto
 --Sub_categorias_de_producto
 --Productos_del_ticket
---Producto_promo
+--Productos_por_promo
 --Pago_tarjeta
