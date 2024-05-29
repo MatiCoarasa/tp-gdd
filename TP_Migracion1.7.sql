@@ -1,218 +1,63 @@
-﻿USE GD1C2024;
+USE GD1C2024;
 GO
 
--- Crear el esquema si no existe
+----------------------------------------CREAR ESQUEMA----------------------------------------
 IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'CHRISTIAN_Y_LOS_MAKINSONS')
 BEGIN 
     EXEC('CREATE SCHEMA CHRISTIAN_Y_LOS_MAKINSONS')
 END
 GO
 
--- Cada vez que iniciamos, borramos las tablas, as� podemos testear tranquilos
--- Las tablas se borran en el orden correcto para evitar conflictos de claves for�neas
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Productos_del_ticket', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Productos_del_ticket;
+----------------------------------------BORRAR TABLAS----------------------------------------
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Productos_por_ticket', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Productos_por_ticket;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Producto_promo', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Producto_promo;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_producto', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_producto;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Producto', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Producto;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.sub_categorias_de_categoria', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.sub_categorias_de_categoria;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Sub_categoria', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Sub_categoria;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Categoria', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Categoria;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.sub_categorias_de_categoria', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.sub_categorias_de_categoria;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Promocion', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Promocion;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Reglas_promo', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Reglas_promo;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Envio', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Envio;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Pago_tarjeta', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Pago_tarjeta;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Pago', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Pago;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Descuentos_medio_pago', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Descuentos_medio_pago;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Descuento', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Descuento;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Ticket', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Ticket;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Cliente', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Cliente;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Empleado', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Empleado;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Caja', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Caja;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Sucursal', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Sucursal;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Supermercado', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Supermercado;
 GO
 
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Producto_promo', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Producto_promo;
+----------------------------------------BORRAR PROCEDURES----------------------------------------
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_supermercados' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_supermercados;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_sucursales' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sucursales;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_empleados' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_empleados;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_tickets' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_tickets;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_categorias' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_categorias;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_sub_categorias' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_sub_categorias_de_categoria' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_categoria;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_cajas' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_cajas;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_productos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_sub_categorias_de_producto' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_producto;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_productos_por_ticket' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_ticket;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_medios_pagos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_medios_pagos;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_descuentos_medios_pagos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_descuentos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_clientes' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_clientes;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_tarjetas' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_tarjetas;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_envios' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_envios;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_promos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_promos;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_reglas_promo' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_reglas_promo;
 GO
 
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_producto', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_producto;
-GO
+----------------------------------------CREAR TABLAS----------------------------------------
 
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Producto', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Producto;
-GO
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.sub_categorias_de_categoria', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.sub_categorias_de_categoria;
-GO
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Sub_categoria', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Sub_categoria;
-GO
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Categoria', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Categoria;
-GO
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.sub_categorias_de_categoria', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.sub_categorias_de_categoria;
-GO
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Promocion', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Promocion;
-GO
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Reglas_promo', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Reglas_promo;
-GO
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Envio', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Envio;
-GO
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Pago_tarjeta', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Pago_tarjeta;
-GO
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Pago', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Pago;
-GO
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Descuentos_medio_pago', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Descuentos_medio_pago;
-GO
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Descuento', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Descuento;
-GO
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago;
-GO
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Ticket', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Ticket;
-GO
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta;
-GO
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Cliente', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Cliente;
-GO
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Empleado', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Empleado;
-GO
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Cajas_de_sucursal', 'U') IS NOT NULL
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Cajas_de_sucursal;
-GO
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Caja', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Caja;
-GO
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Sucursal', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Sucursal;
-GO
-
-
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Supermercado', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Supermercado;
-GO
-
-
-
--- Borrar los procedures
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_supermercados' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_supermercados;
-END
-
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_sucursales' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sucursales;
-END
-
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_empleados' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_empleados;
-END
-
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_tickets' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_tickets;
-END
-
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_categorias' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_categorias;
-END
-
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_sub_categorias' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias;
-END
-
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_sub_categorias_de_categoria' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_categoria;
-END
-
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_cajas' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_cajas;
-END
-
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_cajas_de_sucursal' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_cajas_de_sucursal;
-END
-
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_clientes' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_clientes;
-END
-
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_envios' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_envios;
-END
-
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_reglas_promo' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_reglas_promo;
-END
-
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_promos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_promos;
-END
-
-
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_productos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos;
-END
-
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_sub_categorias_de_producto' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_producto;
-END
-
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_productos_por_ticket' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_ticket;
-END
-
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_medios_pagos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_medios_pagos;
-END
-
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_descuentos_medios_pagos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos;
-END
-
-
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_descuentos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS'))
-BEGIN
-    DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos;
-END
-
-
-
-
--- Crear las tablas
--- hay un cambio con lo de los medios de pagos
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Supermercado (
     super_id DECIMAL(18,0) PRIMARY KEY IDENTITY(1,1),
     super_nombre NVARCHAR(255) NULL,
@@ -240,15 +85,8 @@ GO
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Caja (
 	caja_id DECIMAL(18,0) PRIMARY KEY IDENTITY(1,1),
     caja_numero DECIMAL(18,0),
-	caja_tipo NVARCHAR(255)
-);
-GO
-
-CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Cajas_de_sucursal (
-   cajas_de_sucursal_suc_num INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Sucursal(suc_numero),
-   cajas_de_sucursal_caja_id DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Caja(caja_id)
-   --cajas_de_sucursal_suc_num INT,
-   --cajas_de_sucursal_caja_id DECIMAL(18,0)
+	caja_tipo NVARCHAR(255),
+	id_sucursal INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Sucursal(suc_numero),
 );
 GO
 
@@ -280,14 +118,12 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Cliente (
 );
 GO
 
--- caso de error con el ticket numero 1351388438 que es igual -> no es la PK -> PK es un identity
+--REVISAR ticket_caja_id
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Ticket (
 	ticket_id INT IDENTITY(1,1) PRIMARY KEY,
     ticket_numero DECIMAL(18,0),
     ticket_fecha_hora_venta DATETIME,
-	--ojo aca 
     ticket_caja_id DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Caja(caja_id),
-    --legajo_empleado INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Empleado(emp_legajo),
     legajo_empleado INT null,
 	ticket_tipo_comprobante NVARCHAR(255),
     ticket_subtotal_productos DECIMAL(18,2),
@@ -295,7 +131,8 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Ticket (
     ticket_total_descuento_aplicado_mp DECIMAL(18,2),
     ticket_total_envio DECIMAL(18,2),
     ticket_total_ticket DECIMAL(18,2),
-	ticket_suc_numero INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Sucursal(suc_numero)
+	ticket_suc_numero INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Sucursal(suc_numero),
+	ticket_id_cliente INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Cliente(clie_codigo)
 );
 GO
 
@@ -313,12 +150,9 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Envio (
 GO
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta (
-    tarj_nro DECIMAL(18,0) PRIMARY KEY,
-    tarj_nro_cliente INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Cliente(clie_codigo),
-    --tarj_fecha_emision DATETIME NOT NULL,
-    tarj_nombre NVARCHAR(255) NULL,
-    tarj_fec_venc DATETIME NULL,
-    tarj_nro_seguridad DECIMAL(18,0) NULL
+    tarj_nro NCHAR(9) PRIMARY KEY,
+    tarj_id_cliente INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Cliente(clie_codigo),
+    tarj_fec_venc DATETIME NULL
 );
 GO
 
@@ -353,8 +187,6 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Promocion (
 );
 GO
 
--- en vez de numero de pago tiene el codigo del medio de pago y asi queda asociado
--- HAY QUE REFLEJAR ESTO CON EL DER
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago (
     mp_cod DECIMAL(18,0) PRIMARY KEY IDENTITY(1,1),
     mp_detalle NVARCHAR(255),
@@ -367,8 +199,6 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Descuentos_medio_pago (
     descuento__medio_mp_cod DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago(mp_cod)
 );
 GO
-
-
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Pago (
     pago_nro DECIMAL(18,0) PRIMARY KEY,
@@ -383,15 +213,13 @@ GO
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Categoria (
     categoria_cod DECIMAL(18,0) PRIMARY KEY,
-    categoria_detalle NVARCHAR(255) null
-    --categoria_estado NVARCHAR(255)
+    categoria_detalle NVARCHAR(255) NULL
 );
 GO
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Sub_categoria (
     sub_cat_cod DECIMAL(18,0) PRIMARY KEY,
-    sub_cat_detalle NVARCHAR(255) null
-    --sub_cat_estado NVARCHAR(255),
+    sub_cat_detalle NVARCHAR(255) NULL
 );
 GO
 
@@ -433,17 +261,14 @@ GO
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Pago_tarjeta (
     pago_tarj_nro_pago DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Pago(pago_nro),
-    pago_tarj_nro_tarjeta DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta(tarj_nro),
+    pago_tarj_nro_tarjeta NCHAR(9) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta(tarj_nro),
 	pago_tarj_cuotas DECIMAL(18,0) NULL
 );
 GO
 
--- Filtrar datos de supermercado para migrar informacion
-
-CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_supermercados
-AS
+----------------------------------------CREATE PROCEDURES----------------------------------------
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_supermercados AS
 BEGIN
-
     INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Supermercado (
         super_nombre,
         super_razon_social,
@@ -592,35 +417,17 @@ AS
 BEGIN
 	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Caja(
 		caja_numero,
-		caja_tipo
+		caja_tipo,
+		id_sucursal
 	)
 	SELECT DISTINCT 
 	CAJA_NUMERO, 
-	CAJA_TIPO
+	CAJA_TIPO,
+	CAST(SUBSTRING(SUCURSAL_NOMBRE, CHARINDEX(':', SUCURSAL_NOMBRE) + 1, LEN(SUCURSAL_NOMBRE)) AS INT)
 	FROM gd_esquema.Maestra WHERE
 	CAJA_NUMERO IS NOT NULL
 END
 GO
-
---quizas cajas_sucursal? plural?
-
-CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_cajas_de_sucursal
-AS
-BEGIN
-	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.cajas_de_sucursal(
-		cajas_de_sucursal_suc_num,
-		cajas_de_sucursal_caja_id
-	)
-	SELECT DISTINCT 
-	CAST(SUBSTRING(S.SUCURSAL_NOMBRE, CHARINDEX(':', S.SUCURSAL_NOMBRE) + 1, LEN(S.SUCURSAL_NOMBRE)) AS INT),
-	C.CAJA_ID
-	FROM gd_esquema.Maestra AS S JOIN 
-	CHRISTIAN_Y_LOS_MAKINSONS.Caja AS C ON
-	C.caja_numero = S.CAJA_NUMERO AND
-	C.caja_tipo = S.CAJA_TIPO
-END
-GO
-
 
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_tickets
 AS
@@ -635,7 +442,8 @@ BEGIN
 		ticket_total_descuento_aplicado_mp,
 		ticket_total_envio,
 		ticket_total_ticket,
-		ticket_suc_numero
+		ticket_suc_numero,
+		ticket_id_cliente
 	)
 	SELECT DISTINCT 
 	S.TICKET_NUMERO, 
@@ -647,13 +455,17 @@ BEGIN
 	S.TICKET_TOTAL_DESCUENTO_APLICADO_MP, 
 	S.TICKET_TOTAL_ENVIO,
 	S.TICKET_TOTAL_TICKET,
-	CAST(SUBSTRING(S.SUCURSAL_NOMBRE, CHARINDEX(':', S.SUCURSAL_NOMBRE) + 1, LEN(S.SUCURSAL_NOMBRE)) AS INT)
-	FROM gd_esquema.Maestra AS S JOIN 
-	CHRISTIAN_Y_LOS_MAKINSONS.Caja AS C ON 
-	C.caja_numero = S.CAJA_NUMERO AND C.caja_tipo = S.CAJA_TIPO 
-	WHERE S.CAJA_NUMERO IS NOT NULL 
+	CAST(SUBSTRING(S.SUCURSAL_NOMBRE, CHARINDEX(':', S.SUCURSAL_NOMBRE) + 1, LEN(S.SUCURSAL_NOMBRE)) AS INT),
+	CL.clie_codigo
+	FROM
+		gd_esquema.Maestra AS S
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.Caja AS C ON C.caja_numero = S.CAJA_NUMERO AND C.caja_tipo = S.CAJA_TIPO 
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.Cliente AS CL on CL.clie_dni = S.CLIENTE_DNI
+	WHERE
+		S.CAJA_NUMERO IS NOT NULL
 END
 GO
+
 
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_clientes
 AS
@@ -682,6 +494,7 @@ BEGIN
         m.CLIENTE_LOCALIDAD,
         m.CLIENTE_PROVINCIA
     FROM gd_esquema.Maestra m
+    WHERE m.CLIENTE_DNI IS NOT NULL;
 END
 GO
 
@@ -822,7 +635,6 @@ BEGIN
 END
 GO
 
-
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_producto
 AS
 BEGIN
@@ -858,6 +670,7 @@ BEGIN
     );
 END
 GO
+
 
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos
 AS
@@ -911,69 +724,112 @@ BEGIN
 END
 GO
 
-CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_promocion
+
+-- CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_promo
+-- AS
+-- BEGIN
+--     INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Productos_por_promocion (
+--         producto_codigo,
+--         ticket_numero,
+--         cantidad
+--     )
+--     SELECT DISTINCT
+--         m.producto
+--     FROM gd_esquema.Maestra m
+-- END
+-- GO
+
+
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_tarjetas
 AS
 BEGIN
-    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Productos_por_promocion (
-        producto_codigo,
-        ticket_numero,
-        cantidad
+	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta (
+	    tarj_nro,
+	    tarj_id_cliente,
+	    tarj_fec_venc
     )
     SELECT DISTINCT
-        m.producto
-    FROM gd_esquema.Maestra m
-
+        M.PAGO_TARJETA_NRO,
+		C.clie_codigo,
+		M.PAGO_TARJETA_FECHA_VENC	
+    FROM
+		gd_esquema.Maestra AS M JOIN CHRISTIAN_Y_LOS_MAKINSONS.Cliente AS C ON M.CLIENTE_DNI = C.clie_dni
+	WHERE
+		PAGO_TARJETA_NRO IS NOT NULL
+		AND NOT EXISTS (
+		SELECT 1
+		FROM CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta AS T
+		WHERE M.PAGO_TARJETA_NRO= t.tarj_nro)
 END
 GO
 
-
-
---ejecutamos procedures
+----------------------------------------EXEC PROCEDURES----------------------------------------
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_supermercados;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_sucursales;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_cajas;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_empleados;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_clientes;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_tickets;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_envios;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_tarjetas;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_reglas_promo;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_promos;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_medios_pagos;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos;
+--EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_pagos;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_categorias;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_categoria;
-EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_cajas;
-EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_cajas_de_sucursal;
-EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_tickets;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_producto;
-EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_medios_pagos;
-EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos;
-EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos;
-EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_clientes;
-EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_reglas_promo;
-EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_promos;
-EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_envios;
-EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_ticket;
+--EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_ticket;
+-- EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_promo;
+--EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_pagos_tarjeta;
 
-
-
---SELECT DISTINCT
---        D.desc_cod,
---        MP.mp_cod
---    FROM CHRISTIAN_Y_LOS_MAKINSONS.Descuento D
---    CROSS JOIN CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago MP
-
--- EMPLEADOS/CATEGORIAS/SUBCATEGORIAS/CAJA (CHRIS) -- Hecho 
--- Tarjeta (CHRIS) -- OnGoing
--- ENVIOS/CLIENTES/ (MATI)
-
--- Sucursal y Supermercado (hecho)
-
--- EMPLEADOS Exito parcial. Tengo 63 empleados no null pero hay varias filas null
-
---detalleSubCategoria detallesCategoria
-
---Hay ahora una tabla intermedia dado que se descubrio que una categoria puede tener varias subcategorias pero que una subcategoria puede corresponder a varias categorias
---como un ejemlo puede pensarse productos lacteos y productos derivado animal y las subcategorias leches y quesos. Tanto la leche como el queso puede ser producto derivado animal o lacteos. 
---Mas aun la leche y el queso podrian corresponder a productos derivado no animal (existe la leche y el queso de vaca, de cabra, de coco y soja, etc.)
-
-
+----------------------------------------SELECTS PARA TESTEAR----------------------------------------
+-- select * from gd_esquema.Maestra
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Supermercado
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Sucursal
 --select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Caja
---select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.cajas_de_sucursal
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Empleado order by emp_sucursal
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Cliente
+-- select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Ticket
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Envio
+-- select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Reglas_promo
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Descuento
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Promocion
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Descuentos_medio_pago
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Pago
 --select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Categoria
 --select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Sub_categoria
 --select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_categoria
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Productos_del_ticket
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Producto_promo
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Pago_tarjeta
+
+----------------------------------------TABLAS----------------------------------------
+--Supermercado
+--Sucursal
+--Caja
+--Empleado
+--Cliente
+--Ticket
+--Envio
+--Tarjeta
+--Reglas_promo
+--Descuento
+--Promocion
+--Medio_Pago
+--Descuentos_medio_pago
+--Pago
+--Categoria
+--Sub_categoria
+--Subcategorias_de_categoria
+--Producto
+--Sub_categorias_de_producto
+--Productos_del_ticket
+--Producto_promo
+--Pago_tarjeta
