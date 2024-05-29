@@ -91,8 +91,8 @@ IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Empleado', 'U') IS NOT NULL
     DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Empleado;
 GO
 
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.cajas_de_sucursal', 'U') IS NOT NULL 
-    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.cajas_de_sucursal;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Cajas_de_sucursal', 'U') IS NOT NULL
+    DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Cajas_de_sucursal;
 GO
 
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Caja', 'U') IS NOT NULL 
@@ -244,7 +244,7 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Caja (
 );
 GO
 
-CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.cajas_de_sucursal (
+CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Cajas_de_sucursal (
    cajas_de_sucursal_suc_num INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Sucursal(suc_numero),
    cajas_de_sucursal_caja_id DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Caja(caja_id)
    --cajas_de_sucursal_suc_num INT,
@@ -266,7 +266,7 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Empleado (
 GO
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Cliente (
-    clie_codigo DECIMAL(18,0) IDENTITY(1, 1) PRIMARY KEY,
+    clie_codigo INT IDENTITY(1, 1) PRIMARY KEY,
     clie_nombre NVARCHAR(255),
     clie_apellido NVARCHAR(255),
     clie_dni DECIMAL(18,0),
@@ -308,13 +308,13 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Envio (
     env_fecha_hora_entrega DATETIME,
     env_estado NVARCHAR(255),
     env_nro_ticket INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Ticket(ticket_id),
-    env_nro_cliente DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Cliente(clie_codigo)
+    env_nro_cliente INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Cliente(clie_codigo)
 );
 GO
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta (
     tarj_nro DECIMAL(18,0) PRIMARY KEY,
-    tarj_nro_cliente DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Cliente(clie_codigo),
+    tarj_nro_cliente INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Cliente(clie_codigo),
     --tarj_fecha_emision DATETIME NOT NULL,
     tarj_nombre NVARCHAR(255) NULL,
     tarj_fec_venc DATETIME NULL,
@@ -417,7 +417,7 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_producto (
 );
 GO
 
-CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Productos_del_ticket (
+CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Productos_por_ticket (
     producto_codigo DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Producto(prod_codigo),
     ticket_numero INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Ticket(ticket_id),
     cantidad DECIMAL(18,0),
@@ -685,39 +685,60 @@ BEGIN
 END
 GO
 
--- todo: dependencia de TICKET y CLIENTE
--- CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_envios
--- AS
--- BEGIN
--- 	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Envio (
---         env_costo,
--- 	    env_fecha_programada,
--- 	    env_hora_inicio,
--- 	    env_hora_fin,
--- 	    env_fecha_hora_entrega,
--- 	    env_estado,
--- 	    env_nro_ticket,
--- 	    env_nro_cliente
---     )
---     SELECT DISTINCT
---         m.ENVIO_COSTO,
---         m.ENVIO_FECHA_PROGRAMADA,
---         m.ENVIO_HORA_INICIO,
---         m.ENVIO_HORA_FIN,
---         m.ENVIO_FECHA_ENTREGA,
---         m.ENVIO_ESTADO,
---         m.TICKET_NUMERO,
---         m.CLIENTE_DNI
---     FROM gd_esquema.Maestra m
---     WHERE
---         m.ENVIO_COSTO IS NOT NULL AND
---         m.ENVIO_FECHA_PROGRAMADA IS NOT NULL AND
---         m.ENVIO_HORA_INICIO IS NOT NULL AND
---         m.ENVIO_HORA_FIN IS NOT NULL AND
---         m.ENVIO_FECHA_ENTREGA IS NOT NULL AND
---         m.ENVIO_ESTADO IS NOT NULL;
--- END
--- GO
+
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_envios
+AS
+BEGIN
+	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Envio (
+        env_costo,
+	    env_fecha_programada,
+	    env_hora_inicio,
+	    env_hora_fin,
+	    env_fecha_hora_entrega,
+	    env_estado,
+	    env_nro_ticket,
+	    env_nro_cliente
+    )
+    SELECT DISTINCT
+        m.ENVIO_COSTO,
+        m.ENVIO_FECHA_PROGRAMADA,
+        m.ENVIO_HORA_INICIO,
+        m.ENVIO_HORA_FIN,
+        m.ENVIO_FECHA_ENTREGA,
+        m.ENVIO_ESTADO,
+        t.ticket_id,
+        c.clie_codigo
+    FROM gd_esquema.Maestra m
+        JOIN CHRISTIAN_Y_LOS_MAKINSONS.Ticket t ON
+            m.TICKET_TIPO_COMPROBANTE = t.ticket_tipo_comprobante AND
+            m.TICKET_NUMERO = t.ticket_numero AND
+            m.TICKET_FECHA_HORA = t.ticket_fecha_hora_venta AND
+            m.TICKET_TIPO_COMPROBANTE = t.ticket_tipo_comprobante AND
+            m.TICKET_SUBTOTAL_PRODUCTOS = t.ticket_subtotal_productos AND
+            m.TICKET_TOTAL_DESCUENTO_APLICADO = t.ticket_total_descuento_aplicado AND
+            m.TICKET_TOTAL_DESCUENTO_APLICADO_MP = t.ticket_total_descuento_aplicado_mp AND
+            m.TICKET_TOTAL_ENVIO = t.ticket_total_envio AND
+            m.TICKET_TOTAL_TICKET = t.ticket_total_ticket
+        JOIN CHRISTIAN_Y_LOS_MAKINSONS.Cliente c ON
+            m.CLIENTE_NOMBRE = c.clie_nombre AND
+            m.CLIENTE_APELLIDO = c.clie_apellido AND
+            m.CLIENTE_DNI = c.clie_dni AND
+            m.CLIENTE_FECHA_REGISTRO = c.clie_fecha_registro AND
+            m.CLIENTE_TELEFONO = c.clie_telefono AND
+            m.CLIENTE_MAIL = c.clie_mail AND
+            m.CLIENTE_FECHA_NACIMIENTO = c.clie_fecha_nacimiento AND
+            m.CLIENTE_DOMICILIO = c.clie_domicilio AND
+            m.CLIENTE_LOCALIDAD = c.clie_localidad AND
+            m.CLIENTE_PROVINCIA = c.clie_provincia
+    WHERE
+        m.ENVIO_COSTO IS NOT NULL AND
+        m.ENVIO_FECHA_PROGRAMADA IS NOT NULL AND
+        m.ENVIO_HORA_INICIO IS NOT NULL AND
+        m.ENVIO_HORA_FIN IS NOT NULL AND
+        m.ENVIO_FECHA_ENTREGA IS NOT NULL AND
+        m.ENVIO_ESTADO IS NOT NULL;
+END
+GO
 
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_reglas_promo
 AS
@@ -890,6 +911,21 @@ BEGIN
 END
 GO
 
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_promocion
+AS
+BEGIN
+    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Productos_por_promocion (
+        producto_codigo,
+        ticket_numero,
+        cantidad
+    )
+    SELECT DISTINCT
+        m.producto
+    FROM gd_esquema.Maestra m
+
+END
+GO
+
 
 
 --ejecutamos procedures
@@ -910,8 +946,8 @@ EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_clientes;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_reglas_promo;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_promos;
--- EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_envios;
--- EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_ticket;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_envios;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_ticket;
 
 
 
