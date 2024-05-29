@@ -17,6 +17,7 @@ IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.sub_categorias_de_categoria', 'U') IS NO
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Sub_categoria', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Sub_categoria;
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Categoria', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Categoria;
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.sub_categorias_de_categoria', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.sub_categorias_de_categoria;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Reglas_por_promo', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Reglas_por_promo;
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Promocion', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Promocion;
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Reglas_promo', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Reglas_promo;
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Envio', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Envio;
@@ -58,6 +59,7 @@ IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_tarjetas' AND schem
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_envios' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_envios;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_promos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_promos;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_reglas_promo' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_reglas_promo;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_reglas_por_promo' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_reglas_por_promo;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_pagos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_pagos;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_pagos_tarjeta' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_pagos_tarjeta;
 GO
@@ -169,6 +171,15 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta (
 );
 GO
 
+
+CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Promocion (
+    promo_cod DECIMAL(18,0) PRIMARY KEY,
+    promo_detalle NVARCHAR(255),
+    promo_fecha_desde DATE,
+    promo_fecha_hasta DATE,
+);
+GO
+
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Reglas_promo (
     regla_cod DECIMAL(18,0) IDENTITY(1, 1) PRIMARY KEY,
     regla_descripcion NVARCHAR(255),
@@ -181,6 +192,12 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Reglas_promo (
 );
 GO
 
+CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Reglas_por_promo (
+    promo_cod DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Promocion(promo_cod),
+    regla_cod DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Reglas_promo(regla_cod)
+);
+GO
+
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Descuento (
     desc_cod DECIMAL(18,0) PRIMARY KEY,
     desc_descripcion NVARCHAR(255),
@@ -188,15 +205,6 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Descuento (
     desc_fec_fin DATE,
     desc_descuento DECIMAL(18,2),
 	desc_tope DECIMAL(18,2)
-);
-GO
-
-CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Promocion (
-    promo_cod DECIMAL(18,0) PRIMARY KEY,
-    promo_detalle NVARCHAR(255),
-    promo_fecha_desde DATE,
-    promo_fecha_hasta DATE,
-    promo_cod_regla DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Reglas_promo(regla_cod)
 );
 GO
 
@@ -619,24 +627,41 @@ BEGIN
 	    promo_cod,
 	    promo_detalle,
 	    promo_fecha_desde,
-	    promo_fecha_hasta,
-	    promo_cod_regla
+	    promo_fecha_hasta
     )
     SELECT DISTINCT
         m.PROMO_CODIGO,
         m.PROMOCION_DESCRIPCION,
         m.PROMOCION_FECHA_INICIO,
-        m.PROMOCION_FECHA_FIN,
-        Rp.regla_cod
-    FROM gd_esquema.Maestra m JOIN
-        CHRISTIAN_Y_LOS_MAKINSONS.Reglas_promo Rp on
-            m.REGLA_DESCRIPCION = Rp.regla_descripcion AND
-            m.REGLA_DESCUENTO_APLICABLE_PROD = Rp.regla_descuento_aplica_prod AND
-            m.REGLA_CANT_APLICABLE_REGLA = Rp.regla_cant_aplica_regla AND
-            m.REGLA_CANT_APLICA_DESCUENTO = Rp.regla_cant_aplica_desc AND
-            m.REGLA_CANT_MAX_PROD = Rp.regla_cant_max AND
-            m.REGLA_APLICA_MISMA_MARCA = Rp.regla_aplica_misma_marca AND
-            m.REGLA_APLICA_MISMO_PROD = Rp.regla_aplica_mismo_prod
+        m.PROMOCION_FECHA_FIN
+    FROM gd_esquema.Maestra m
+        WHERE m.PROMO_CODIGO IS NOT NULL;
+END
+GO
+
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_reglas_por_promo
+AS
+BEGIN
+    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Reglas_por_promo (
+        promo_cod,
+        regla_cod
+    ) SELECT DISTINCT
+        p.promo_cod,
+        r.regla_cod
+    FROM gd_esquema.Maestra m
+        JOIN CHRISTIAN_Y_LOS_MAKINSONS.Reglas_promo r on
+            m.REGLA_DESCRIPCION = r.regla_descripcion AND
+            m.REGLA_DESCUENTO_APLICABLE_PROD = r.regla_descuento_aplica_prod AND
+            m.REGLA_CANT_APLICABLE_REGLA = r.regla_cant_aplica_regla AND
+            m.REGLA_CANT_APLICA_DESCUENTO = r.regla_cant_aplica_desc AND
+            m.REGLA_CANT_MAX_PROD = r.regla_cant_max AND
+            m.REGLA_APLICA_MISMA_MARCA = r.regla_aplica_misma_marca AND
+            m.REGLA_APLICA_MISMO_PROD = r.regla_aplica_mismo_prod
+        JOIN CHRISTIAN_Y_LOS_MAKINSONS.Promocion p on
+            m.PROMO_CODIGO = p.promo_cod AND
+            m.PROMOCION_DESCRIPCION = p.promo_detalle AND
+            m.PROMOCION_FECHA_INICIO = p.promo_fecha_desde AND
+            m.PROMOCION_FECHA_FIN = p.promo_fecha_hasta;
 END
 GO
 
@@ -885,6 +910,7 @@ EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_tarjetas;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_reglas_promo;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_promos;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_reglas_por_promo;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_medios_pagos;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_pagos;
