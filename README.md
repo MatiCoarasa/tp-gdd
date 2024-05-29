@@ -1,4 +1,4 @@
-# tp-gdd
+# tp-gdd: CHRISTIAN_Y_LOS_MAKINSONS
 
 ## Comandos de CMD para migrar todo desde CERO (previo: Crear DATABASE "GD1C2024")
 
