@@ -34,7 +34,6 @@ IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Caja', 'U') IS NOT NULL DROP TABLE CHRIS
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Caja_tipo', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Caja_tipo;
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Sucursal', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Sucursal;
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Supermercado', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Supermercado;
-
 GO
 
 ----------------------------------------BORRAR PROCEDURES----------------------------------------
@@ -227,10 +226,8 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Pago (
     pago_total DECIMAL(18,2),
     pago_cant_cuotas DECIMAL(18,0),
     pago_fecha_hora DATETIME,
-	--pago_medio NVARCHAR(255) null,
     pago_medio DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago(mp_cod),
     pago_nro_ticket INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Ticket(ticket_id),
-	--pago_descuento DECIMAL(18,0)
     pago_descuento DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Descuento(desc_cod)
 );
 GO
@@ -835,7 +832,7 @@ BEGIN
 	    M.PAGO_FECHA,
 	    MP.mp_cod,
 	    T.ticket_id,
-	    M.PAGO_DESCUENTO_APLICADO
+		D.desc_cod
 	FROM gd_esquema.Maestra AS M
 		JOIN CHRISTIAN_Y_LOS_MAKINSONS.Ticket AS T ON 
 	    FORMAT(M.PAGO_FECHA, 'yyyy-MM-dd') = FORMAT(T.ticket_fecha_hora_venta, 'yyyy-MM-dd') AND M.PAGO_IMPORTE = T.ticket_total_ticket
@@ -942,14 +939,14 @@ EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_pagos_tarjeta;
 --select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Descuento
 --select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Promocion
 --select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago
-select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Descuentos_medio_pago
-select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Pago
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Descuentos_medio_pago
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Pago
 --select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Categoria
 --select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Sub_categoria
 --select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_categoria
 --select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Producto_promo
 --select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Productos_del_ticket
-select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Pago_tarjeta
+--select top 100 * from GD1C2024.CHRISTIAN_Y_LOS_MAKINSONS.Pago_tarjeta
 
 ----------------------------------------TABLAS----------------------------------------
 --Supermercado
