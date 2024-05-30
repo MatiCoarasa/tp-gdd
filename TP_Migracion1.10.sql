@@ -136,7 +136,6 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Ticket (
 	ticket_id INT IDENTITY(1,1) PRIMARY KEY,
     ticket_numero DECIMAL(18,0),
 	ticket_emp_legajo INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Empleado(emp_legajo),
-	ticket_id_cliente INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Cliente(clie_codigo),
     ticket_fecha_hora_venta DATETIME,
     ticket_caja_id DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Caja(id_caja),
 	ticket_tipo_comprobante NVARCHAR(255),
@@ -470,7 +469,6 @@ BEGIN
 		ticket_fecha_hora_venta,
 		ticket_caja_id,
 		ticket_emp_legajo,
-		ticket_id_cliente,
 		ticket_tipo_comprobante,
 		ticket_subtotal_productos,
 		ticket_total_descuento_aplicado,
@@ -479,24 +477,20 @@ BEGIN
 		ticket_total_ticket
 	)
 	SELECT DISTINCT 
-	S.TICKET_NUMERO, 
-	S.TICKET_FECHA_HORA, 
+	M.TICKET_NUMERO, 
+	M.TICKET_FECHA_HORA, 
 	C.id_caja,
 	E.emp_legajo,
-	cl.clie_codigo,
-	S.TICKET_TIPO_COMPROBANTE, 
-	S.TICKET_SUBTOTAL_PRODUCTOS, 
-	S.TICKET_TOTAL_DESCUENTO_APLICADO, 
-	S.TICKET_TOTAL_DESCUENTO_APLICADO_MP, 
-	S.TICKET_TOTAL_ENVIO,
-	S.TICKET_TOTAL_TICKET
-	-- sucursal se accede desde la caja CAST(SUBSTRING(S.SUCURSAL_NOMBRE, CHARINDEX(':', S.SUCURSAL_NOMBRE) + 1, LEN(S.SUCURSAL_NOMBRE)) AS INT)
-	FROM (SELECT TICKET_NUMERO, clt.clie_codigo FROM gd_esquema.Maestra AS MT JOIN CHRISTIAN_Y_LOS_MAKINSONS.Cliente as CLT ON MT.CLIENTE_DNI = clt.clie_dni WHERE CLIENTE_DNI is not null) 
-	AS CL join (CHRISTIAN_Y_LOS_MAKINSONS.Empleado AS E JOIN 
-	(gd_esquema.Maestra AS S JOIN 
-	CHRISTIAN_Y_LOS_MAKINSONS.Caja AS C ON C.caja_numero = S.CAJA_NUMERO AND C.ID_sucursal = CAST(SUBSTRING(S.SUCURSAL_NOMBRE, CHARINDEX(':', S.SUCURSAL_NOMBRE) + 1, LEN(S.SUCURSAL_NOMBRE)) AS INT)) ON
-	E.emp_dni = S.EMPLEADO_DNI) on CL.TICKET_NUMERO = S.TICKET_NUMERO
-	WHERE S.CAJA_NUMERO IS NOT NULL 
+	M.TICKET_TIPO_COMPROBANTE, 
+	M.TICKET_SUBTOTAL_PRODUCTOS, 
+	M.TICKET_TOTAL_DESCUENTO_APLICADO, 
+	M.TICKET_TOTAL_DESCUENTO_APLICADO_MP, 
+	M.TICKET_TOTAL_ENVIO,
+	M.TICKET_TOTAL_TICKET 
+	FROM gd_esquema.Maestra AS M JOIN
+	CHRISTIAN_Y_LOS_MAKINSONS.caja AS C on m.CAJA_NUMERO = c.caja_numero and CAST(SUBSTRING(M.SUCURSAL_NOMBRE, CHARINDEX(':', M.SUCURSAL_NOMBRE) + 1, LEN(M.SUCURSAL_NOMBRE)) AS INT) = c.id_sucursal JOIN
+	CHRISTIAN_Y_LOS_MAKINSONS.Empleado AS E on E.emp_dni = M.EMPLEADO_DNI and E.emp_apellido = M.EMPLEADO_APELLIDO 
+	where TICKET_NUMERO is not null AND EMPLEADO_DNI is not null and M.caja_numero is not null 
 END
 GO
 
