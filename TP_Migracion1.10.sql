@@ -163,7 +163,7 @@ GO
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta (
 	tarj_id INT IDENTITY(1,1) PRIMARY KEY,
 	tarj_nro NCHAR(9),
-	tarj_clie_dni INT,
+	tarj_clie_dni INT NULL,
     --tarj_id_cliente INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Cliente(clie_codigo),
     tarj_fec_venc DATETIME NULL
 );
@@ -803,7 +803,7 @@ BEGIN
 	((SELECT DISTINCT TICKET_NUMERO, CLIENTE_DNI FROM gd_esquema.Maestra) AS C join 
 	(SELECT DISTINCT PAGO_TARJETA_NRO, TICKET_NUMERO, PAGO_MEDIO_PAGO, PAGO_TARJETA_FECHA_VENC,	PAGO_TARJETA_CUOTAS	FROM gd_esquema.Maestra) AS P 
 	ON c.TICKET_NUMERO = p.TICKET_NUMERO) 
-	where P.PAGO_TARJETA_NRO is not null and C.cliente_dni is not null
+	where P.PAGO_TARJETA_NRO is not null
 END
 GO
 
