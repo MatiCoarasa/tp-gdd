@@ -20,9 +20,7 @@ IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_DESCUENTO_MEDIOS_PAGO', 'V'
 GO
 
 ----------------------------------------BORRAR TABLAS----------------------------------------
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_TABLA_1', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_TABLA_1
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_TABLA_2', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_TABLA_2
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_TABLA_3', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_TABLA_3
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS
 GO
 
 ----------------------------------------BORRAR DIMENSIONES----------------------------------------
@@ -44,7 +42,9 @@ IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'MIGRAR_BI_DIM_RANGO_ETARIO
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'MIGRAR_BI_DIM_TURNO' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_TURNO;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'MIGRAR_BI_DIM_MEDIOS_PAGO' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_MEDIOS_PAGO;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'MIGRAR_BI_DIM_CATEGORIAS' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_CATEGORIAS;
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'MIGRAR_BI_BI_DIM_SUBCATEGORIAS' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_BI_DIM_SUBCATEGORIAS;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'MIGRAR_BI_DIM_SUBCATEGORIAS' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_BI_DIM_SUBCATEGORIAS;
+
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'MIGRAR_Ticket_A_BI_TICKETS' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_Ticket_A_BI_TICKETS;
 GO
 
 ----------------------------------------CREAR DIMENSIONES----------------------------------------
@@ -96,21 +96,22 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TURNO(
 )
 GO
 
---PENDIENTE
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_MEDIOS_PAGO(
-	turno_id INT IDENTITY(1,1) PRIMARY KEY
+	mp_id INT IDENTITY(1,1) PRIMARY KEY,
+	mp_detalle NVARCHAR(255) NOT NULL,
+	mp_tipo NVARCHAR(255) NOT NULL
 )
 GO
 
---PENDIENTE
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CATEGORIAS(
-	turno_id INT IDENTITY(1,1) PRIMARY KEY
+	cat_id INT IDENTITY(1,1) PRIMARY KEY,
+	cat_detalle NVARCHAR(255) NOT NULL
 )
 GO
 
---PENDIENTE
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUBCATEGORIAS(
-	turno_id INT IDENTITY(1,1) PRIMARY KEY
+	subcat_id INT IDENTITY(1,1) PRIMARY KEY,
+	subcat_detalle NVARCHAR(255) NOT NULL
 )
 GO
 
@@ -121,6 +122,21 @@ GO
 --PAGOS
 --PROMOCIONES
 --ENVIOS
+
+CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS (
+    ticket_id INT IDENTITY(1,1) PRIMARY KEY,
+    ticket_numero DECIMAL(18,0),
+    ticket_emp_legajo INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Empleado(emp_legajo),
+    ticket_fecha_hora_venta DATETIME,
+    ticket_caja_id DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Caja(id_caja),
+    ticket_tipo_comprobante NVARCHAR(255),
+    ticket_subtotal_productos DECIMAL(18,2),
+    ticket_total_descuento_aplicado DECIMAL(18,2),
+    ticket_total_descuento_aplicado_mp DECIMAL(18,2),
+    ticket_total_envio DECIMAL(18,2),
+    ticket_total_ticket DECIMAL(18,2)
+);
+GO
 
 ----------------------------------------CREAR INDICES----------------------------------------
 --...
@@ -165,10 +181,45 @@ END
 GO
 
 
+
+
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_Ticket_A_BI_TICKETS
+AS
+BEGIN
+    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS (
+        ticket_numero, 
+        ticket_emp_legajo, 
+        ticket_fecha_hora_venta, 
+        ticket_caja_id, 
+        ticket_tipo_comprobante, 
+        ticket_subtotal_productos, 
+        ticket_total_descuento_aplicado, 
+        ticket_total_descuento_aplicado_mp, 
+        ticket_total_envio, 
+        ticket_total_ticket
+    )
+    SELECT 
+        ticket_numero, 
+        ticket_emp_legajo, 
+        ticket_fecha_hora_venta, 
+        ticket_caja_id, 
+        ticket_tipo_comprobante, 
+        ticket_subtotal_productos, 
+        ticket_total_descuento_aplicado, 
+        ticket_total_descuento_aplicado_mp, 
+        ticket_total_envio, 
+        ticket_total_ticket
+    FROM CHRISTIAN_Y_LOS_MAKINSONS.Ticket;
+END;
+GO
+
+
+
 ----------------------------------------EXEC PROCEDURES----------------------------------------
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_RANGO_ETARIO;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_TURNO;
-
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_Ticket_A_BI_TICKETS;
+GO
 
 ----------------------------------------VIEWS SIMPLES----------------------------------------
 --LISTADO DE VISTAS:
@@ -192,8 +243,25 @@ EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_TURNO;
 --localidad, año y mes. Se calcula en función de la sumatoria del importe de las
 --ventas sobre el total de las mismas.
 
---CREATE VIEW TICKET_PROMEDIO_MENSUAL AS
---SELECT * FROM TABLA123;
+CREATE VIEW V_TICKET_PROMEDIO_MENSUAL AS
+SELECT
+	S.suc_localidad AS Localidad, --sacarlo de la dimension
+	YEAR(T.ticket_fecha_hora_venta) AS Año, --sacarlo de la dimension
+	MONTH(T.ticket_fecha_hora_venta) AS Mes, --sacarlo de la dimension
+	ROUND(AVG(T.ticket_total_ticket), 2) AS Promedio_Venta
+FROM 
+	CHRISTIAN_Y_LOS_MAKINSONS.Ticket T
+	INNER JOIN CHRISTIAN_Y_LOS_MAKINSONS.Caja C ON T.ticket_caja_id = C.id_caja
+	INNER JOIN CHRISTIAN_Y_LOS_MAKINSONS.Sucursal S ON C.id_sucursal = S.suc_numero
+GROUP BY 
+	S.suc_localidad, 
+	YEAR(T.ticket_fecha_hora_venta), 
+	MONTH(T.ticket_fecha_hora_venta)
+GO
+
+select * from dbo.V_TICKET_PROMEDIO_MENSUAL;
+
+--PARA MI, cuando migramos Tickets, hay que ponerle el ID de la sucursal, y no traernos nada de la info de la caja. No nos importa
 
 ----------------------------------------
 
@@ -291,3 +359,4 @@ EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_TURNO;
 
 --CREATE VIEW PORCENTAJE_DESCUENTO_MEDIOS_PAGO AS
 --SELECT * FROM TABLA123;
+
