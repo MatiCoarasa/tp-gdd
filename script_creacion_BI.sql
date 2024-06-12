@@ -209,15 +209,16 @@ END
 GO
 
 
+-- lo dejo como otros por esta respuesta > https://groups.google.com/u/1/g/gestiondedatos/c/Ks6MV-w62Hs
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_TURNO AS
 BEGIN
 	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TURNO(turno)
 	SELECT DISTINCT
 		(CASE
-			WHEN CONVERT(TIME, T.ticket_fecha_hora_venta) >= '08:00:00' AND CONVERT(TIME, T.ticket_fecha_hora_venta) < '12:00:01' THEN '08:00 - 12:00'
-			WHEN CONVERT(TIME, T.ticket_fecha_hora_venta) >= '12:00:01' AND CONVERT(TIME, T.ticket_fecha_hora_venta) < '16:00:01' THEN '12:00 - 16:00'
-			WHEN CONVERT(TIME, T.ticket_fecha_hora_venta) >= '16:00:00' AND CONVERT(TIME, T.ticket_fecha_hora_venta) <= '20:00:00' THEN '16:00 - 20:00'
-			ELSE 'VENTA FUERA DE TURNO'
+			WHEN CONVERT(TIME, T.ticket_fecha_hora_venta) >= '08:00:00' AND CONVERT(TIME, T.ticket_fecha_hora_venta) < '12:00:00' THEN '08:00 - 12:00'
+			WHEN CONVERT(TIME, T.ticket_fecha_hora_venta) >= '12:00:00' AND CONVERT(TIME, T.ticket_fecha_hora_venta) < '16:00:00' THEN '12:00 - 16:00'
+			WHEN CONVERT(TIME, T.ticket_fecha_hora_venta) >= '16:00:00' AND CONVERT(TIME, T.ticket_fecha_hora_venta) < '20:00:00' THEN '16:00 - 20:00'
+			ELSE 'Otros'
 		END)
 	FROM CHRISTIAN_Y_LOS_MAKINSONS.Ticket T
 END
