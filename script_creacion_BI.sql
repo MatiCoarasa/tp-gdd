@@ -4,7 +4,7 @@ GO
 ----------------------------------------BORRAR INDICES----------------------------------------
 --...
 
-----------------------------------------BORRAR VISTAS----------------------------------------
+----------------------------------------BORRAR VIEWS----------------------------------------
 IF OBJECT_ID('dbo.V_TICKET_PROMEDIO_MENSUAL', 'V') IS NOT NULL DROP VIEW dbo.V_TICKET_PROMEDIO_MENSUAL
 IF OBJECT_ID('dbo.V_CANTIDAD_UNIDADES_PROMEDIO', 'V') IS NOT NULL DROP VIEW dbo.V_CANTIDAD_UNIDADES_PROMEDIO
 IF OBJECT_ID('dbo.V_PORCENTAJE_ANUAL_VENTAS', 'V') IS NOT NULL DROP VIEW dbo.V_PORCENTAJE_ANUAL_VENTAS
@@ -20,12 +20,12 @@ IF OBJECT_ID('dbo.V_PORCENTAJE_DESCUENTO_MEDIOS_PAGO', 'V') IS NOT NULL DROP VIE
 GO
 
 ----------------------------------------BORRAR TABLAS----------------------------------------
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_ENVIOS', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_ENVIOS
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_TIPOS_CAJA', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_TIPOS_CAJA
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_CLIENTES', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_CLIENTES
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_CAJAS', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_CAJAS
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_EMPLEADOS', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_EMPLEADOS
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_CLIENTES', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_CLIENTES
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_ENVIOS', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_ENVIOS
+
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_MEDIOS_PAGO', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_MEDIOS_PAGO
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_DESCUENTOS_MEDIO_PAGO', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DESCUENTOS_MEDIO_PAGO
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_PAGOS', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_PAGOS
@@ -33,8 +33,8 @@ IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_PAGOS_TARJETA', 'U') IS NOT NULL DROP
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_PROMOCIONES', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_PROMOCIONES
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_REGLAS_DE_PROMOCIONES', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_REGLAS_DE_PROMOCIONES
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_REGLA_PROMOCION', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_REGLA_PROMOCION
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_PRODUCTOS', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_PRODUCTOS
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_PRODUCTO_TICKET', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_PRODUCTO_TICKET
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_PRODUCTOS', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_PRODUCTOS
 GO
 
 ----------------------------------------BORRAR DIMENSIONES----------------------------------------
@@ -47,7 +47,7 @@ IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_MEDIOS_PAGO', 'U') IS NOT NULL DR
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CATEGORIA_SUBCATEGORIA', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CATEGORIA_SUBCATEGORIA
 GO
 
-----------------------------------------BORRAR PROCEDURES----------------------------------------
+----------------------------------------BORRAR PROCEDURES DIMENSIONES----------------------------------------
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'MIGRAR_BI_DIM_TIEMPO' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_TIEMPO;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'MIGRAR_BI_DIM_SUCURSAL' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_SUCURSAL;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'MIGRAR_BI_DIM_UBICACION' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_UBICACION;
@@ -55,8 +55,14 @@ IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'MIGRAR_BI_DIM_RANGO_ETARIO
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'MIGRAR_BI_DIM_TURNO' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_TURNO;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'MIGRAR_BI_DIM_MEDIOS_PAGO' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_MEDIOS_PAGO;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'MIGRAR_BI_DIM_CATEGORIA_SUBCATEGORIA' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_CATEGORIA_SUBCATEGORIA;
+GO
 
+----------------------------------------BORRAR PROCEDURES TABLAS----------------------------------------
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'MIGRAR_BI_CAJAS' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_CAJAS;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'MIGRAR_BI_TICKETS' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_TICKETS;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'MIGRAR_BI_EMPLEADOS' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_EMPLEADOS;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'MIGRAR_BI_CLIENTES' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_CLIENTES;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'MIGRAR_BI_ENVIOS' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_ENVIOS;
 GO
 
 ----------------------------------------CREAR DIMENSIONES----------------------------------------
@@ -84,7 +90,7 @@ GO
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL (
 	suc_numero INT PRIMARY KEY,
-	id_supermercado DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Supermercado(super_id),
+	id_supermercado DECIMAL(18,0),
     suc_nombre NVARCHAR(255),
     suc_direccion NVARCHAR(255),
 	suc_ubicacion DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION(ubi_id)    
@@ -110,6 +116,8 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_MEDIOS_PAGO(
 )
 GO
 
+--no es lo mas optimo
+--tendríamos que tener una tabla de categorias, una de subcategorias, y una relacional con PK(cat_id, subcat_id)
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CATEGORIA_SUBCATEGORIA(
 	cat_id INT,
 	subcat_id INT,
@@ -121,51 +129,29 @@ GO
 
 ----------------------------------------CREAR TABLAS----------------------------------------
 
---Solamente migramos la informacion que nos interesa de las tablas que nos interesan
-
-CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_TIPOS_CAJA (
-	id_caja_tipo INT PRIMARY KEY IDENTITY(1,1),
-	caja_nombre_tipo NVARCHAR(255)
-);
-GO
-
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_CAJAS (
-	id_caja DECIMAL(18,0) PRIMARY KEY IDENTITY(1,1),
-    caja_numero DECIMAL(18,0),
-	id_tipo_caja INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Caja_Tipo(id_caja_tipo),
-	id_sucursal INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Sucursal(suc_numero)
+	caja_id INT NOT NULL PRIMARY KEY,
+    id_sucursal INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL(suc_numero),
+	caja_numero DECIMAL(18,0) NOT NULL,
+	caja_tipo NVARCHAR(255) NOT NULL
 );
 GO
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_EMPLEADOS (
-    emp_legajo INT IDENTITY(1,1) PRIMARY KEY,
-    emp_sucursal INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Sucursal(suc_numero),
-    emp_nombre NVARCHAR(255) NULL,
-    emp_apellido NVARCHAR(255) NULL,
-    emp_dni DECIMAL(18,0) NULL,
-    emp_fecha_registro DATETIME NULL,
-    emp_fecha_nacimiento DATETIME NULL,
-    emp_email NVARCHAR(255) NULL,
-    emp_telefono DECIMAL(18,0) NULL
+    emp_legajo INT PRIMARY KEY,
+	emp_fecha_nacimiento DATETIME NULL,
+	emp_sucursal INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL(suc_numero)
 );
 GO
 
---cambiar localidad y provincia por ubicacion_id
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_CLIENTES (
-    clie_codigo INT IDENTITY(1,1) PRIMARY KEY,
-    clie_nombre NVARCHAR(255),
-    clie_apellido NVARCHAR(255),
-    clie_dni DECIMAL(18,0),
-    clie_fecha_registro DATETIME,
-    clie_telefono DECIMAL(18,0),
-    clie_mail NVARCHAR(255),
+    clie_codigo INT PRIMARY KEY,
     clie_fecha_nacimiento DATE,
-    clie_domicilio NVARCHAR(255),
-    clie_localidad NVARCHAR(255),
-    clie_provincia NVARCHAR(255)
+	clie_ubicacion DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION(ubi_id)
 );
 GO
 
+--sacar columnas que no se usen
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS (
     ticket_id INT IDENTITY(1,1) PRIMARY KEY,
     ticket_numero DECIMAL(18,0),
@@ -182,15 +168,15 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS (
 GO
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_ENVIOS (
-    env_codigo DECIMAL(18,0) IDENTITY (1,1) PRIMARY KEY,
+    env_codigo DECIMAL(18,0) PRIMARY KEY,
     env_costo DECIMAL(18,2),
     env_fecha_programada DATETIME,
     env_hora_inicio DECIMAL(18,0),
     env_hora_fin DECIMAL(18,0),
     env_fecha_hora_entrega DATETIME,
     env_estado NVARCHAR(255),
-    env_nro_ticket INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Ticket(ticket_id),
-    env_nro_cliente INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Cliente(clie_codigo)
+    env_nro_ticket INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS(ticket_id),
+    env_nro_cliente INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_CLIENTES(clie_codigo)
 );
 GO
 
@@ -290,20 +276,25 @@ BEGIN
 END
 GO
 
---agregar localidad y provincia de Clientes
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_UBICACION AS
 BEGIN
-	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION(
+	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION (
 		ubi_localidad,
 		ubi_provincia
-		)
-	SELECT DISTINCT
+	)
+	SELECT
 		S.suc_localidad,
 		S.suc_provincia
-	FROM CHRISTIAN_Y_LOS_MAKINSONS.Sucursal S
+	FROM
+		CHRISTIAN_Y_LOS_MAKINSONS.Sucursal S
+	UNION
+	SELECT
+		C.clie_localidad,
+		C.clie_provincia
+	FROM
+		CHRISTIAN_Y_LOS_MAKINSONS.Cliente C;
 END
 GO
-
 
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_SUCURSAL AS
 BEGIN
@@ -349,7 +340,6 @@ BEGIN
 	FROM CHRISTIAN_Y_LOS_MAKINSONS.Empleado E
 END
 GO
-
 
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_TURNO AS
 BEGIN
@@ -399,6 +389,26 @@ GO
 
 ----------------------------------------CREAR PROCEDURES TABLAS----------------------------------------
 
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_CAJAS
+AS
+BEGIN
+    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.BI_CAJAS (
+        caja_id,
+		id_sucursal,
+		caja_numero,
+		caja_tipo
+    )
+    SELECT DISTINCT
+		C.id_caja,
+        C.id_sucursal,
+		C.caja_numero,
+		CT.caja_nombre_tipo
+    FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL S
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.Caja C ON C.id_sucursal = S.suc_numero
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.Caja_Tipo CT ON CT.id_caja_tipo = C.id_tipo_caja 
+END;
+GO
+
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_TICKETS
 AS
 BEGIN
@@ -429,6 +439,72 @@ BEGIN
 END;
 GO
 
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_EMPLEADOS
+AS
+BEGIN
+    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.BI_EMPLEADOS (
+		emp_legajo,
+		emp_fecha_nacimiento,
+		emp_sucursal
+    )
+    SELECT DISTINCT
+        E.emp_legajo,
+		E.emp_fecha_nacimiento,
+		S.suc_numero
+    FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL S
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.Empleado E ON E.emp_sucursal = S.suc_numero
+END;
+GO
+
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_CLIENTES
+AS
+BEGIN
+    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.BI_CLIENTES (
+		clie_codigo,
+		clie_fecha_nacimiento,
+		clie_ubicacion
+    )
+    SELECT DISTINCT
+        C.clie_codigo,
+		C.clie_fecha_nacimiento,
+		U.ubi_id
+    FROM CHRISTIAN_Y_LOS_MAKINSONS.Cliente C
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION U
+		ON U.ubi_localidad = C.clie_localidad
+		AND U.ubi_provincia = C.clie_provincia
+END;
+GO
+
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_ENVIOS
+AS
+BEGIN
+    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.BI_ENVIOS(
+		env_codigo,
+		env_costo,
+		env_fecha_programada,
+		env_hora_inicio,
+		env_hora_fin,
+		env_fecha_hora_entrega,
+		env_estado,
+		env_nro_ticket,
+		env_nro_cliente
+    )
+    SELECT DISTINCT
+        E.env_codigo,
+		E.env_costo,
+		E.env_fecha_programada,
+		E.env_hora_inicio,
+		E.env_hora_fin,
+		E.env_fecha_hora_entrega,
+		E.env_estado,
+		E.env_nro_ticket,
+		C.clie_codigo
+    FROM CHRISTIAN_Y_LOS_MAKINSONS.Envio E
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_CLIENTES C
+		ON E.env_nro_cliente = C.clie_codigo
+END;
+GO
+
 ----------------------------------------EXEC PROCEDURES----------------------------------------
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_TIEMPO;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_UBICACION;
@@ -438,26 +514,36 @@ EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_TURNO;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_MEDIOS_PAGO;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_CATEGORIA_SUBCATEGORIA;
 
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_CAJAS;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_TICKETS;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_EMPLEADOS;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_CLIENTES;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_ENVIOS;
 GO
 
 ----------------------------------------VIEWS SIMPLES----------------------------------------
 
 CREATE VIEW V_TICKET_PROMEDIO_MENSUAL AS
 SELECT
-	S.suc_localidad AS Localidad, --sacarlo de la dimension
+	U.ubi_localidad AS Localidad, --sacarlo de la dimension
 	YEAR(T.ticket_fecha_hora_venta) AS Año, --sacarlo de la dimension
 	MONTH(T.ticket_fecha_hora_venta) AS Mes, --sacarlo de la dimension
 	ROUND(AVG(T.ticket_total_ticket), 2) AS Promedio_Venta
 FROM 
-	CHRISTIAN_Y_LOS_MAKINSONS.Ticket T
-	INNER JOIN CHRISTIAN_Y_LOS_MAKINSONS.Caja C ON T.ticket_caja_id = C.id_caja
-	INNER JOIN CHRISTIAN_Y_LOS_MAKINSONS.Sucursal S ON C.id_sucursal = S.suc_numero
+	CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS T
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_CAJAS C
+		ON C.caja_id = T.ticket_caja_id
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL S
+		ON C.id_sucursal = S.suc_numero
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION U
+		ON U.ubi_id = S.suc_ubicacion
 GROUP BY 
-	S.suc_localidad, 
+	U.ubi_localidad, 
 	YEAR(T.ticket_fecha_hora_venta), 
 	MONTH(T.ticket_fecha_hora_venta)
 GO
+
+--SELECT * FROM V_TICKET_PROMEDIO_MENSUAL;
 
 ----------------------------------------
 
@@ -477,8 +563,79 @@ GO
 --tipo de caja para cada cuatrimestre. Se calcula tomando la cantidad de ventas
 --correspondientes sobre el total de ventas anual.
 
---CREATE VIEW PORCENTAJE_ANUAL_VENTAS AS
---SELECT * FROM TABLA123;
+CREATE VIEW V_PORCENTAJE_ANUAL_VENTAS AS
+	WITH ventas_cuatrimestre AS (
+		SELECT
+			YEAR(ticket_fecha_hora_venta) AS anio,
+			DATEPART(QUARTER, ticket_fecha_hora_venta) AS cuatrimestre,
+			CASE
+				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) < 25 THEN '<25'
+				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) BETWEEN 25 AND 35 THEN '25-35'
+				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) BETWEEN 35 AND 55 THEN '35-55'
+				ELSE '>55'
+			END AS rango_etario,
+			c.caja_tipo,
+			COUNT(*) AS total_ventas_cuatrimestre
+		FROM
+			CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS t
+			JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_EMPLEADOS e ON t.ticket_emp_legajo = e.emp_legajo
+			JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_CAJAS c ON t.ticket_caja_id = c.caja_id
+		GROUP BY
+			YEAR(ticket_fecha_hora_venta),
+			DATEPART(QUARTER, ticket_fecha_hora_venta),
+			CASE
+				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) < 25 THEN '<25'
+				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) BETWEEN 25 AND 35 THEN '25-35'
+				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) BETWEEN 35 AND 55 THEN '35-55'
+				ELSE '>55'
+			END,
+			c.caja_tipo
+	),
+	ventas_anuales AS (
+		SELECT
+			YEAR(ticket_fecha_hora_venta) AS anio,
+			CASE
+				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) < 25 THEN '<25'
+				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) BETWEEN 25 AND 35 THEN '25-35'
+				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) BETWEEN 35 AND 55 THEN '35-55'
+				ELSE '>55'
+			END AS rango_etario,
+			c.caja_tipo,
+			COUNT(*) AS total_ventas_anual
+		FROM
+			CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS t
+			JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_EMPLEADOS e ON t.ticket_emp_legajo = e.emp_legajo
+			JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_CAJAS c ON t.ticket_caja_id = c.caja_id
+		GROUP BY
+			YEAR(ticket_fecha_hora_venta),
+			CASE
+				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) < 25 THEN '<25'
+				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) BETWEEN 25 AND 35 THEN '25-35'
+				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) BETWEEN 35 AND 55 THEN '35-55'
+				ELSE '>55'
+			END,
+			c.caja_tipo
+	)
+	SELECT
+		vc.anio,
+		vc.cuatrimestre,
+		vc.rango_etario,
+		vc.caja_tipo,
+		SUM(vc.total_ventas_cuatrimestre) AS total_ventas_cuatrimestre,
+		SUM(va.total_ventas_anual) AS total_ventas_anual,
+		SUM(vc.total_ventas_cuatrimestre) * 100.0 / SUM(va.total_ventas_anual) AS porcentaje_ventas_cuatrimestre
+	FROM
+		ventas_cuatrimestre vc
+		JOIN ventas_anuales va ON vc.anio = va.anio AND vc.rango_etario = va.rango_etario AND vc.caja_tipo = va.caja_tipo
+	GROUP BY
+		vc.anio,
+		vc.cuatrimestre,
+		vc.rango_etario,
+		vc.caja_tipo;
+GO
+
+SELECT * FROM V_PORCENTAJE_ANUAL_VENTAS;
+GO
 
 ----------------------------------------
 
