@@ -1,0 +1,1 @@
+docker run -v $PWD/db/data:/var/opt/mssql/data -v $PWD/db/log:/var/opt/mssql/log -v $PWD/db/secrets:/var/opt/mssql/secrets -v $PWD/shared-dir:/shared-dir -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=Abcdefg_818" -p 1433:1433 -u root -d mcr.microsoft.com/mssql/server:2019-latest
