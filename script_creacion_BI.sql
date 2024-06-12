@@ -164,7 +164,7 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_CLIENTES (
 );
 GO
 
---sacar columnas que no se usen
+--SACAR COLUMNAS QUE NO SE USEN
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS (
     ticket_id INT IDENTITY(1,1) PRIMARY KEY,
     ticket_numero DECIMAL(18,0),
@@ -569,6 +569,9 @@ GO
 
 ----------------------------------------VIEWS SIMPLES----------------------------------------
 
+--VISTA 1: Ticket Promedio mensual
+--Valor promedio de las ventas (en $) según la localidad, año y mes.
+--Se calcula en función de la sumatoria del importe de las ventas sobre el total de las mismas.
 CREATE VIEW V_TICKET_PROMEDIO_MENSUAL AS
 SELECT
 	U.ubi_localidad AS Localidad, --sacarlo de la dimension
@@ -593,22 +596,23 @@ GO
 
 ----------------------------------------
 
---CANTIDAD_UNIDADES_PROMEDIO
+--VISTA 2: Cantidad Unidades Promedio
 --Cantidad promedio de artículos que se venden en función de los tickets según el turno
 --para cada cuatrimestre de cada año. Se obtiene sumando la cantidad de artículos de
 --todos los tickets correspondientes sobre la cantidad de tickets. Si un producto tiene
 --más de una unidad en un ticket, para el indicador se consideran todas las unidades.
 
---CREATE VIEW CANTIDAD_UNIDADES_PROMEDIO AS
---SELECT * FROM TABLA123;
+--CREATE VIEW V_CANTIDAD_UNIDADES_PROMEDIO AS
+--
+--GO
+
+--SELECT * FROM V_CANTIDAD_UNIDADES_PROMEDIO;
 
 ----------------------------------------
 
---PORCENTAJE_ANUAL_VENTAS
---Porcentaje anual de ventas registradas por rango etario del empleado según el
---tipo de caja para cada cuatrimestre. Se calcula tomando la cantidad de ventas
---correspondientes sobre el total de ventas anual.
-
+--VISTA 3: Porcentaje anual de ventas
+--Porcentaje anual de ventas registradas por rango etario del empleado según el tipo de caja para cada cuatrimestre.
+--Se calcula tomando la cantidad de ventas correspondientes sobre el total de ventas anual.
 CREATE VIEW V_PORCENTAJE_ANUAL_VENTAS AS
 	WITH ventas_cuatrimestre AS (
 		SELECT
@@ -680,8 +684,8 @@ CREATE VIEW V_PORCENTAJE_ANUAL_VENTAS AS
 		vc.[Tipo de Caja];
 GO
 
-SELECT * FROM V_PORCENTAJE_ANUAL_VENTAS;
-GO
+--SELECT * FROM V_PORCENTAJE_ANUAL_VENTAS;
+--GO
 
 ----------------------------------------
 
@@ -693,11 +697,25 @@ GO
 
 ----------------------------------------
 
---PORCENTAJE_DESCUENTO_APLICADO
+--VISTA 5: Porcentaje de descuento aplicados
 --Porcentaje de descuento aplicados en función del total de los tickets según el mes de cada año.
 
---CREATE VIEW PORCENTAJE_DESCUENTO_APLICADO AS
---SELECT * FROM TABLA123;
+CREATE VIEW V_PORCENTAJE_DESCUENTO_APLICADO AS
+	SELECT
+		YEAR(t.ticket_fecha_hora_venta) AS "Año",
+		MONTH(t.ticket_fecha_hora_venta) AS "Mes",
+		SUM(t.ticket_total_descuento_aplicado) AS "Total Descuentos",
+		SUM(t.ticket_total_ticket) AS "Total Ventas",
+		(SUM(t.ticket_total_descuento_aplicado) / NULLIF(SUM(t.ticket_total_ticket), 0)) * 100 AS "Porcentaje Descuento"
+	FROM
+		CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS t
+	GROUP BY
+		YEAR(t.ticket_fecha_hora_venta),
+		MONTH(t.ticket_fecha_hora_venta)
+GO
+
+--SELECT * FROM V_PORCENTAJE_DESCUENTO_APLICADO;
+--GO
 
 ----------------------------------------
 
@@ -710,11 +728,42 @@ GO
 
 ----------------------------------------
 
---PORCENTAJE_CUMPLIMIENTO_ENVIOS
+--PENDIENTE
+
+--VISTA 7: Porcentaje de cumplimiento de envíos
 --Porcentaje de cumplimiento de envíos en los tiempos programados por sucursal por año/mes (desvío)
 
---CREATE VIEW PORCENTAJE_CUMPLIMIENTO_ENVIOS AS
---SELECT * FROM TABLA123;
+CREATE VIEW V_PORCENTAJE_CUMPLIMIENTO_ENVIOS AS
+	SELECT
+		YEAR(env.env_fecha_programada) AS Año,
+		MONTH(env.env_fecha_programada) AS Mes,
+		U.ubi_localidad AS Sucursal,
+		COUNT(CASE 
+				WHEN CAST(env.env_fecha_hora_entrega AS DATE) = CAST(env.env_fecha_programada AS DATE) AND 
+					 env.env_fecha_hora_entrega BETWEEN CAST(env.env_fecha_programada AS DATETIME) AND 
+					 DATEADD(SECOND, env.env_hora_fin, CAST(env.env_fecha_programada AS DATETIME)) 
+				THEN env.env_codigo 
+			  END
+			) AS Envios_Entregados_A_Tiempo,
+		COUNT(*) AS Total_Envios_Programados,
+		100.0 * COUNT(CASE 
+						  WHEN CAST(env.env_fecha_hora_entrega AS DATE) = CAST(env.env_fecha_programada AS DATE) AND 
+							   env.env_fecha_hora_entrega BETWEEN CAST(env.env_fecha_programada AS DATETIME) AND 
+							   DATEADD(SECOND, env.env_hora_fin, CAST(env.env_fecha_programada AS DATETIME)) 
+						  THEN env.env_codigo 
+						END
+					  ) / NULLIF(COUNT(*), 0) AS Porcentaje_Cumplimiento
+	FROM
+		CHRISTIAN_Y_LOS_MAKINSONS.BI_ENVIOS env
+		JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION U ON env.env_nro_cliente = U.ubi_id
+	GROUP BY
+		YEAR(env.env_fecha_programada),
+		MONTH(env.env_fecha_programada),
+		U.ubi_localidad
+GO
+
+--SELECT * FROM V_PORCENTAJE_CUMPLIMIENTO_ENVIOS;
+--GO
 
 ----------------------------------------
 
@@ -726,11 +775,39 @@ GO
 
 ----------------------------------------
 
---LOCALIDADES_MAYOR_COSTO_ENVIO
+--VISTA 9: Localidades con mayor costo de envío
 --Las 5 localidades (tomando la localidad del cliente) con mayor costo de envío.
 
---CREATE VIEW LOCALIDADES_MAYOR_COSTO_ENVIO AS
---SELECT * FROM TABLA123;
+CREATE VIEW V_LOCALIDADES_MAYOR_COSTO_ENVIO AS
+	WITH CostosPorLocalidad AS (
+		SELECT
+			U.ubi_localidad AS Localidad,
+			SUM(env.env_costo) AS Costo_Total_Envio
+		FROM
+			CHRISTIAN_Y_LOS_MAKINSONS.BI_ENVIOS env
+			JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_CLIENTES C ON env.env_nro_cliente = C.clie_codigo
+			JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION U ON C.clie_ubicacion = U.ubi_id
+		GROUP BY
+			U.ubi_localidad
+	)
+	SELECT
+		Localidad,
+		Costo_Total_Envio
+	FROM
+		(
+			SELECT
+				Localidad,
+				Costo_Total_Envio,
+				ROW_NUMBER() OVER (ORDER BY Costo_Total_Envio DESC) AS Orden
+			FROM
+				CostosPorLocalidad
+		) AS RankedCostos
+	WHERE
+		Orden <= 5;
+GO
+
+SELECT * FROM V_LOCALIDADES_MAYOR_COSTO_ENVIO;
+GO
 
 ----------------------------------------
 
