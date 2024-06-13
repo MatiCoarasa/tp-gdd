@@ -2,3 +2,10 @@
 scripts-iniciales/
 db/
 scripts-db/
+
+gd_esquema.Maestra.sql
+gd_esquema.Maestra.Table.sql
+gd_esquema.Schema.sql
+migrate.sh
+
+.DS_Store
