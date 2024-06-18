@@ -143,7 +143,9 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Ticket (
     ticket_total_descuento_aplicado DECIMAL(18,2),
     ticket_total_descuento_aplicado_mp DECIMAL(18,2),
     ticket_total_envio DECIMAL(18,2),
-    ticket_total_ticket DECIMAL(18,2)
+    ticket_total_ticket DECIMAL(18,2),
+	ticket_promociones_cod DECIMAL(18,2),
+	ticket_descuentos_cod DECIMAL(18,2)
 );
 GO
 
@@ -163,8 +165,7 @@ GO
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta (
 	tarj_id INT IDENTITY(1,1) PRIMARY KEY,
 	tarj_nro NCHAR(9),
-	tarj_clie_dni INT,
-    --tarj_id_cliente INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Cliente(clie_codigo),
+	tarj_id_cliente INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Cliente(clie_codigo),
     tarj_fec_venc DATETIME NULL
 );
 GO
@@ -285,6 +286,8 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Pago_tarjeta (
 	pago_tarj_cuotas DECIMAL(18,0) NULL
 );
 GO
+
+
 
 ----------------------------------------CREATE PROCEDURES----------------------------------------
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_supermercados AS
@@ -789,21 +792,34 @@ GO
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_tarjetas
 AS
 BEGIN
-	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta (
-	    tarj_nro,
-	    tarj_clie_dni,
-	    tarj_fec_venc
+    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta (
+        tarj_nro,
+        tarj_id_cliente,
+        tarj_fec_venc
     )
     SELECT DISTINCT
-	P.PAGO_TARJETA_NRO,
-	C.cliente_dni,
-	P.PAGO_TARJETA_FECHA_VENC 
-	--T.TICKET_ID 
-	FROM 
-	((SELECT DISTINCT TICKET_NUMERO, CLIENTE_DNI FROM gd_esquema.Maestra) AS C join 
-	(SELECT DISTINCT PAGO_TARJETA_NRO, TICKET_NUMERO, PAGO_MEDIO_PAGO, PAGO_TARJETA_FECHA_VENC,	PAGO_TARJETA_CUOTAS	FROM gd_esquema.Maestra) AS P 
-	ON c.TICKET_NUMERO = p.TICKET_NUMERO) 
-	where P.PAGO_TARJETA_NRO is not null and C.cliente_dni is not null
+        M3.PAGO_TARJETA_NRO,
+        CASE 
+            WHEN M1.CLIENTE_DNI IS NOT NULL THEN C.clie_codigo
+            ELSE NULL
+        END AS tarj_id_cliente,
+        M3.PAGO_TARJETA_FECHA_VENC
+    FROM 
+        gd_esquema.Maestra M3
+    LEFT JOIN (
+        SELECT DISTINCT 
+            M1.TICKET_NUMERO, 
+            M1.CLIENTE_DNI
+        FROM 
+            gd_esquema.Maestra M1
+        INNER JOIN gd_esquema.Maestra M2 ON M1.TICKET_NUMERO = M2.TICKET_NUMERO
+        WHERE 
+            M1.CLIENTE_DNI IS NOT NULL
+            AND M2.PAGO_TARJETA_NRO IS NOT NULL
+    ) M1 ON M3.TICKET_NUMERO = M1.TICKET_NUMERO
+    LEFT JOIN CHRISTIAN_Y_LOS_MAKINSONS.Cliente C ON M1.CLIENTE_DNI = C.clie_dni
+    WHERE 
+        M3.PAGO_TARJETA_NRO IS NOT NULL;
 END
 GO
 
@@ -880,18 +896,20 @@ BEGIN
 		pago_tarj_nro_tarjeta,
 		pago_tarj_cuotas
     )
-	SELECT DISTINCT
+	SELECT 
 		P.pago_id,
 		T.tarj_id,
 		M.PAGO_TARJETA_CUOTAS
 	FROM gd_esquema.Maestra AS M
-		JOIN CHRISTIAN_Y_LOS_MAKINSONS.Pago AS P ON M.PAGO_TARJETA_NRO = P.pago_tarjeta_nro
-		JOIN CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta AS T ON M.PAGO_TARJETA_NRO = T.tarj_nro
+		JOIN CHRISTIAN_Y_LOS_MAKINSONS.Pago P ON M.PAGO_TARJETA_NRO = P.pago_tarjeta_nro
+		JOIN CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta T ON M.PAGO_TARJETA_NRO = T.tarj_nro
 	WHERE
 		M.PAGO_TARJETA_NRO IS NOT NULL AND
 		M.PAGO_TARJETA_CUOTAS IS NOT NULL
 END
 GO
+
+
 
 ----------------------------------------EXEC PROCEDURES----------------------------------------
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_supermercados;
@@ -965,3 +983,4 @@ EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_pagos_tarjeta;
 --Productos_del_ticket
 --Producto_por_promo
 --Pago_tarjeta
+
