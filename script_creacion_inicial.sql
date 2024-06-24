@@ -143,9 +143,7 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Ticket (
     ticket_total_descuento_aplicado DECIMAL(18,2),
     ticket_total_descuento_aplicado_mp DECIMAL(18,2),
     ticket_total_envio DECIMAL(18,2),
-    ticket_total_ticket DECIMAL(18,2),
-	ticket_promociones_cod DECIMAL(18,2),
-	ticket_descuentos_cod DECIMAL(18,2)
+    ticket_total_ticket DECIMAL(18,2)
 );
 GO
 
