@@ -9,7 +9,7 @@ END
 GO
 
 ----------------------------------------BORRAR TABLAS----------------------------------------
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Productos_del_ticket', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Productos_del_ticket;
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Items_Ticket', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Items_Ticket;
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Productos_por_promo', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Productos_por_promo;
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_producto', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_producto;
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.Producto', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.Producto;
@@ -49,7 +49,7 @@ IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_cajas' AND schema_i
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_productos_por_promo' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_promo;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_productos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_sub_categorias_de_producto' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_producto;
-IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_productos_por_ticket' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_ticket;
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_items_ticket' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_items_ticket;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_medios_pagos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_medios_pagos;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_descuentos_medios_pagos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos_medios_pagos;
 IF EXISTS (SELECT * FROM sys.procedures WHERE name = 'migrar_descuentos' AND schema_id = SCHEMA_ID('CHRISTIAN_Y_LOS_MAKINSONS')) DROP PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_descuentos;
@@ -264,11 +264,14 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_producto (
 );
 GO
 
-CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Productos_del_ticket (
+CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.Items_Ticket (
     productos_ticket_id INT PRIMARY KEY IDENTITY(1,1),
 	producto_codigo DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Producto(prod_codigo),
     ticket_numero INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Ticket(ticket_id),
     cantidad DECIMAL(18,0),
+    promo_cod DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Promocion(promo_cod),
+    precio_producto DECIMAL(18,0),
+    precio_producto_desc DECIMAL(18, 0)
 );
 GO
 
@@ -738,7 +741,6 @@ BEGIN
         SELECT 1
         FROM CHRISTIAN_Y_LOS_MAKINSONS.Descuento D
         WHERE D.desc_cod = M.DESCUENTO_CODIGO
-		AND D.desc_cod = M.DESCUENTO_CODIGO
 		AND D.desc_fec_inicio = M.DESCUENTO_FECHA_INICIO
 		AND D.desc_fec_fin = M.DESCUENTO_FECHA_FIN
 		AND D.desc_descuento = M.DESCUENTO_PORCENTAJE_DESC
@@ -854,34 +856,41 @@ BEGIN
 END
 GO
 
-CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_ticket
+CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_items_ticket
 AS
 BEGIN
-	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Productos_del_ticket(
+	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Items_Ticket(
 		producto_codigo,
 		ticket_numero,
-		cantidad
+		cantidad,
+        promo_cod,
+        precio_producto,
+        precio_producto_desc
     )
-	SELECT DISTINCT
-		P.prod_codigo,
-		T.ticket_id,
-		M.TICKET_DET_CANTIDAD
-	FROM gd_esquema.Maestra AS M
-		JOIN CHRISTIAN_Y_LOS_MAKINSONS.Producto AS P ON M.PRODUCTO_NOMBRE = P.prod_nombre
-		JOIN CHRISTIAN_Y_LOS_MAKINSONS.Sucursal AS S ON
-			M.SUCURSAL_NOMBRE = S.suc_nombre AND
-			M.SUCURSAL_DIRECCION = S.suc_direccion AND
-			M.SUCURSAL_LOCALIDAD = S.suc_localidad AND
-			M.SUCURSAL_PROVINCIA = S.suc_provincia
-		JOIN CHRISTIAN_Y_LOS_MAKINSONS.Ticket AS T ON T.ticket_numero = M.TICKET_NUMERO
-	WHERE
-		M.TICKET_DET_CANTIDAD IS NOT NULL AND
-		M.PRODUCTO_NOMBRE IS NOT NULL AND
-		M.SUCURSAL_NOMBRE IS NOT NULL AND
-		M.SUCURSAL_DIRECCION IS NOT NULL AND
-		M.SUCURSAL_LOCALIDAD IS NOT NULL AND
-		M.SUCURSAL_PROVINCIA IS NOT NULL AND
-		M.TICKET_NUMERO IS NOT NULL
+    SELECT DISTINCT
+        P.prod_codigo,
+        T.ticket_id,
+        M.TICKET_DET_CANTIDAD,
+        M.PROMO_CODIGO,
+        M.PRODUCTO_PRECIO,
+        (M.PRODUCTO_PRECIO * M.REGLA_DESCUENTO_APLICABLE_PROD)
+    FROM gd_esquema.Maestra AS M
+        JOIN CHRISTIAN_Y_LOS_MAKINSONS.Producto AS P ON M.PRODUCTO_NOMBRE = P.prod_nombre
+        JOIN CHRISTIAN_Y_LOS_MAKINSONS.Sucursal AS S ON
+            M.SUCURSAL_NOMBRE = S.suc_nombre AND
+            M.SUCURSAL_DIRECCION = S.suc_direccion AND
+            M.SUCURSAL_LOCALIDAD = S.suc_localidad AND
+            M.SUCURSAL_PROVINCIA = S.suc_provincia
+        JOIN CHRISTIAN_Y_LOS_MAKINSONS.Ticket AS T ON T.ticket_numero = M.TICKET_NUMERO
+        LEFT JOIN CHRISTIAN_Y_LOS_MAKINSONS.Promocion PR ON M.PROMO_CODIGO = PR.promo_cod
+    WHERE
+        M.TICKET_DET_CANTIDAD IS NOT NULL AND
+        M.PRODUCTO_NOMBRE IS NOT NULL AND
+        M.SUCURSAL_NOMBRE IS NOT NULL AND
+        M.SUCURSAL_DIRECCION IS NOT NULL AND
+        M.SUCURSAL_LOCALIDAD IS NOT NULL AND
+        M.SUCURSAL_PROVINCIA IS NOT NULL AND
+        M.TICKET_NUMERO IS NOT NULL;
 END
 GO
 
@@ -932,7 +941,7 @@ EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_categoria;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_sub_categorias_de_producto;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_promo;
-EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_productos_por_ticket;
+EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_items_ticket;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.migrar_pagos_tarjeta;
 
 ----------------------------------------SELECTS PARA TESTEAR----------------------------------------
