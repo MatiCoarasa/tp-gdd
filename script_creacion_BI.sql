@@ -16,8 +16,8 @@ IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.V_ENVIOS_POR_RANGO_ETARIO', 'V') IS NOT 
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.V_LOCALIDADES_MAYOR_COSTO_ENVIO', 'V') IS NOT NULL DROP VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_LOCALIDADES_MAYOR_COSTO_ENVIO
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.V_SUCURSALES_MAYOR_PAGOS_CUOTAS', 'V') IS NOT NULL DROP VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_SUCURSALES_MAYOR_PAGOS_CUOTAS
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.V_PROMEDIO_IMPORTE_CUOTA_POR_RANGO_ETARIO', 'V') IS NOT NULL DROP VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PROMEDIO_IMPORTE_CUOTA_POR_RANGO_ETARIO
-IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_DESCUENTO_MEDIOS_PAGO', 'V') IS NOT NULL DROP VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_DESCUENTO_MEDIOS_PAGO
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.V_CATEGORIAS_MAYOR_DESCUENTO_PROMOCIONES', 'V') IS NOT NULL DROP VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_CATEGORIAS_MAYOR_DESCUENTO_PROMOCIONES
+IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_DESCUENTOS_MEDIOS_PAGO', 'V') IS NOT NULL DROP VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_DESCUENTOS_MEDIOS_PAGO
 GO
 
 
@@ -85,9 +85,9 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO (
 GO
 
 ALTER TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO
-	ADD CONSTRAINT check_tiempo_mes CHECK (tiempo_mes > 0 AND tiempo_mes < 12);
+	ADD CONSTRAINT check_tiempo_mes CHECK (tiempo_mes > 0 AND tiempo_mes <= 12);
 ALTER TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO
-	ADD CONSTRAINT check_tiempo_cuatrimestre CHECK (tiempo_cuatrimestre IN (1, 2, 3, 4));
+	ADD CONSTRAINT check_tiempo_cuatrimestre CHECK (tiempo_cuatrimestre IN (1, 2, 3));
 GO
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION (
@@ -155,14 +155,14 @@ GO
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_EMPLEADOS (
     emp_legajo INT PRIMARY KEY,
-	emp_fecha_nacimiento DATETIME NULL,
+    emp_rango_etario INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO(rango_etario_id),
 	emp_sucursal INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL(suc_numero)
 );
 GO
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_CLIENTES (
     clie_codigo INT PRIMARY KEY,
-    clie_fecha_nacimiento DATE,
+    clie_rango_etario INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO(rango_etario_id),
 	clie_ubicacion DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION(ubi_id)
 );
 GO
@@ -172,7 +172,7 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS (
     ticket_id INT IDENTITY(1,1) PRIMARY KEY,
     ticket_numero DECIMAL(18,0),
     ticket_emp_legajo INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Empleado(emp_legajo),
-    ticket_fecha_hora_venta DATETIME,
+    ticket_tiempo DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO(tiempo_id),
     ticket_caja_id DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Caja(id_caja),
     ticket_tipo_comprobante NVARCHAR(255),
     ticket_subtotal_productos DECIMAL(18,2),
@@ -229,7 +229,7 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_PAGOS (
     pago_descuento DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DESCUENTOS(desc_cod)
 );
 GO
-select * from CHRISTIAN_Y_LOS_MAKINSONS.BI_CAJAS
+
 --DANI
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_PAGOS_TARJETA (
 	pago_tarj_fecha SMALLDATETIME,
@@ -241,6 +241,7 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_PAGOS_TARJETA (
 	pago_tarj_monto_total DECIMAL(18,2) NULL
 );
 GO
+
 --PENDIENTE
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_PROMOCIONES (
     promo_cod DECIMAL(18,0) PRIMARY KEY,
@@ -315,10 +316,11 @@ BEGIN
 	SELECT DISTINCT
 		MONTH(T.ticket_fecha_hora_venta),
 		YEAR(T.ticket_fecha_hora_venta),
-		(MONTH(T.ticket_fecha_hora_venta) - 1) / 3 + 1
+		(MONTH(T.ticket_fecha_hora_venta) / 4) + 1
 	FROM CHRISTIAN_Y_LOS_MAKINSONS.Ticket T
 END
 GO
+
 
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_UBICACION AS
 BEGIN
@@ -484,7 +486,7 @@ BEGIN
     INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS (
         ticket_numero, 
         ticket_emp_legajo, 
-        ticket_fecha_hora_venta, 
+        ticket_tiempo,
         ticket_caja_id, 
         ticket_tipo_comprobante, 
         ticket_subtotal_productos, 
@@ -496,7 +498,7 @@ BEGIN
     SELECT 
         ticket_numero, 
         ticket_emp_legajo, 
-        ticket_fecha_hora_venta, 
+        t.tiempo_id,
         ticket_caja_id, 
         ticket_tipo_comprobante, 
         ticket_subtotal_productos, 
@@ -504,7 +506,10 @@ BEGIN
         ticket_total_descuento_aplicado_mp, 
         ticket_total_envio, 
         ticket_total_ticket
-    FROM CHRISTIAN_Y_LOS_MAKINSONS.Ticket;
+    FROM CHRISTIAN_Y_LOS_MAKINSONS.Ticket ti
+    JOIN BI_DIM_TIEMPO t ON
+        YEAR(ti.ticket_fecha_hora_venta) = t.tiempo_anio AND
+        MONTH(ti.ticket_fecha_hora_venta) = t.tiempo_mes;
 END;
 GO
 
@@ -513,15 +518,22 @@ AS
 BEGIN
     INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.BI_EMPLEADOS (
 		emp_legajo,
-		emp_fecha_nacimiento,
+		emp_rango_etario,
 		emp_sucursal
     )
     SELECT DISTINCT
         E.emp_legajo,
-		E.emp_fecha_nacimiento,
+		R.rango_etario_id,
 		S.suc_numero
     FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL S
 	JOIN CHRISTIAN_Y_LOS_MAKINSONS.Empleado E ON E.emp_sucursal = S.suc_numero
+    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO R
+        ON R.rango_etario = CASE
+                WHEN DATEDIFF(YEAR, E.emp_fecha_nacimiento, GETDATE()) < 25 THEN '<25'
+                WHEN DATEDIFF(YEAR, E.emp_fecha_nacimiento, GETDATE()) BETWEEN 25 AND 35 THEN '25-35'
+                WHEN DATEDIFF(YEAR, E.emp_fecha_nacimiento, GETDATE()) BETWEEN 35 AND 55 THEN '35-55'
+                WHEN DATEDIFF(YEAR, E.emp_fecha_nacimiento, GETDATE()) > 55 THEN '>55'
+            END
 END;
 GO
 
@@ -529,18 +541,25 @@ CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_CLIENTES
 AS
 BEGIN
     INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.BI_CLIENTES (
-		clie_codigo,
-		clie_fecha_nacimiento,
-		clie_ubicacion
+        clie_codigo,
+        clie_rango_etario,
+        clie_ubicacion
     )
     SELECT DISTINCT
         C.clie_codigo,
-		C.clie_fecha_nacimiento,
-		U.ubi_id
+        R.rango_etario_id,
+        U.ubi_id
     FROM CHRISTIAN_Y_LOS_MAKINSONS.Cliente C
-	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION U
-		ON U.ubi_localidad = C.clie_localidad
-		AND U.ubi_provincia = C.clie_provincia
+    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO R
+        ON R.rango_etario = CASE
+                WHEN DATEDIFF(YEAR, C.clie_fecha_nacimiento, GETDATE()) < 25 THEN '<25'
+                WHEN DATEDIFF(YEAR, C.clie_fecha_nacimiento, GETDATE()) BETWEEN 25 AND 35 THEN '25-35'
+                WHEN DATEDIFF(YEAR, C.clie_fecha_nacimiento, GETDATE()) BETWEEN 35 AND 55 THEN '35-55'
+                WHEN DATEDIFF(YEAR, C.clie_fecha_nacimiento, GETDATE()) > 55 THEN '>55'
+            END
+    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION U
+        ON U.ubi_localidad = C.clie_localidad
+        AND U.ubi_provincia = C.clie_provincia;
 END;
 GO
 
@@ -664,9 +683,9 @@ GO
 --Se calcula en función de la sumatoria del importe de las ventas sobre el total de las mismas.
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_TICKET_PROMEDIO_MENSUAL AS
 SELECT
-	U.ubi_localidad AS Localidad, --sacarlo de la dimension
-	YEAR(T.ticket_fecha_hora_venta) AS Año, --sacarlo de la dimension
-	MONTH(T.ticket_fecha_hora_venta) AS Mes, --sacarlo de la dimension
+	U.ubi_localidad AS Localidad,
+	TI.tiempo_anio AS Año,
+	TI.tiempo_mes AS Mes,
 	ROUND(AVG(T.ticket_total_ticket), 2) AS Promedio_Venta
 FROM 
 	CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS T
@@ -676,10 +695,12 @@ FROM
 		ON C.id_sucursal = S.suc_numero
 	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION U
 		ON U.ubi_id = S.suc_ubicacion
+    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO TI
+        ON T.ticket_tiempo = TI.tiempo_id
 GROUP BY 
 	U.ubi_localidad, 
-	YEAR(T.ticket_fecha_hora_venta), 
-	MONTH(T.ticket_fecha_hora_venta)
+	TI.tiempo_anio,
+	TI.tiempo_mes
 GO
 
 --SELECT * FROM V_TICKET_PROMEDIO_MENSUAL;
@@ -736,54 +757,38 @@ GO
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_ANUAL_VENTAS AS
 	WITH ventas_cuatrimestre AS (
 		SELECT
-			YEAR(ticket_fecha_hora_venta) AS Año,
-			DATEPART(QUARTER, ticket_fecha_hora_venta) AS Cuatrimestre,
-			CASE
-				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) < 25 THEN '<25'
-				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) BETWEEN 25 AND 35 THEN '25-35'
-				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) BETWEEN 35 AND 55 THEN '35-55'
-				ELSE '>55'
-			END AS [Rango Etario],
+			ti.tiempo_anio AS Año,
+			ti.tiempo_cuatrimestre AS Cuatrimestre,
+			r.rango_etario AS [Rango Etario],
 			c.caja_tipo AS [Tipo de Caja],
 			COUNT(*) AS [Total Ventas Cuatrimestre]
 		FROM
 			CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS t
 			JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_EMPLEADOS e ON t.ticket_emp_legajo = e.emp_legajo
 			JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_CAJAS c ON t.ticket_caja_id = c.caja_id
+		    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO r ON e.emp_rango_etario = r.rango_etario_id
+		    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO ti ON t.ticket_tiempo = ti.tiempo_id
 		GROUP BY
-			YEAR(ticket_fecha_hora_venta),
-			DATEPART(QUARTER, ticket_fecha_hora_venta),
-			CASE
-				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) < 25 THEN '<25'
-				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) BETWEEN 25 AND 35 THEN '25-35'
-				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) BETWEEN 35 AND 55 THEN '35-55'
-				ELSE '>55'
-			END,
+			ti.tiempo_anio,
+			ti.tiempo_cuatrimestre,
+			r.rango_etario,
 			c.caja_tipo
 	),
 	ventas_anuales AS (
 		SELECT
-			YEAR(ticket_fecha_hora_venta) AS anio,
-			CASE
-				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) < 25 THEN '<25'
-				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) BETWEEN 25 AND 35 THEN '25-35'
-				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) BETWEEN 35 AND 55 THEN '35-55'
-				ELSE '>55'
-			END AS [Rango Etario],
+			ti.tiempo_anio AS anio,
+			r.rango_etario AS [Rango Etario],
 			c.caja_tipo,
 			COUNT(*) AS [Total Ventas Anuales]
 		FROM
 			CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS t
 			JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_EMPLEADOS e ON t.ticket_emp_legajo = e.emp_legajo
 			JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_CAJAS c ON t.ticket_caja_id = c.caja_id
+		    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO r ON e.emp_rango_etario = r.rango_etario_id
+			JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO ti ON t.ticket_tiempo = ti.tiempo_id
 		GROUP BY
-			YEAR(ticket_fecha_hora_venta),
-			CASE
-				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) < 25 THEN '<25'
-				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) BETWEEN 25 AND 35 THEN '25-35'
-				WHEN DATEDIFF(YEAR, e.emp_fecha_nacimiento, GETDATE()) BETWEEN 35 AND 55 THEN '35-55'
-				ELSE '>55'
-			END,
+			ti.tiempo_anio,
+			r.rango_etario,
 			c.caja_tipo
 	)
 	SELECT
@@ -849,12 +854,21 @@ GO
 --VISTA 5: Porcentaje de descuento aplicados
 --Porcentaje de descuento aplicados en función del total de los tickets según el mes de cada año.
 
---CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_DESCUENTO_APLICADO AS
---b c 
---GO
+CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_DESCUENTO_APLICADO AS
+	SELECT
+		ti.tiempo_anio AS "Año",
+		ti.tiempo_mes AS "Mes",
+		SUM(t.ticket_total_descuento_aplicado) AS "Total Descuentos",
+		SUM(t.ticket_total_ticket) AS "Total Ventas",
+		(SUM(t.ticket_total_descuento_aplicado) / NULLIF(SUM(t.ticket_total_ticket), 0)) * 100 AS "Porcentaje Descuento"
+	FROM
+		CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS t
+	    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO ti ON t.ticket_tiempo = ti.tiempo_id
+	GROUP BY
+		ti.tiempo_anio,
+		ti.tiempo_mes
+GO
 
---SELECT * FROM V_PORCENTAJE_DESCUENTO_APLICADO;
---GO
 
 ----------------------------------------
 
@@ -994,12 +1008,7 @@ FROM
 JOIN
     CHRISTIAN_Y_LOS_MAKINSONS.BI_CLIENTES C ON E.env_nro_cliente = C.clie_codigo
 JOIN
-    CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO R ON (CASE
-            WHEN DATEDIFF(YEAR, C.clie_fecha_nacimiento, GETDATE()) < 25 THEN '<25'
-            WHEN DATEDIFF(YEAR, C.clie_fecha_nacimiento, GETDATE()) BETWEEN 25 AND 35 THEN '25-35'
-            WHEN DATEDIFF(YEAR, C.clie_fecha_nacimiento, GETDATE()) BETWEEN 35 AND 55 THEN '35-55'
-            WHEN DATEDIFF(YEAR, C.clie_fecha_nacimiento, GETDATE()) > 55 THEN '>55'
-        END) = R.rango_etario
+    CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO R ON C.clie_rango_etario = R.rango_etario_id
 JOIN
     CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO T ON (YEAR(E.env_fecha_hora_entrega) = T.tiempo_anio
         AND (
@@ -1055,7 +1064,7 @@ GO
 --Las 3 sucursales con el mayor importe de pagos en cuotas, según el medio de pago,
 --mes y año. Se calcula sumando los importes totales de todas las ventas en cuotas.
 
-CREATE VIEW SUCURSALES_MAYOR_PAGOS_CUOTAS AS
+CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_SUCURSALES_MAYOR_PAGOS_CUOTAS AS
 WITH SucursalesOrdenadas AS (
     SELECT 
         YEAR(T.pago_tarj_fecha) AS AÑO,
@@ -1090,8 +1099,20 @@ GO
 --PROMEDIO_IMPORTE_CUOTA_POR_RANGO_ETARIO
 --Promedio de importe de la cuota en función del rango etario del cliente.
 
---CREATE VIEW PROMEDIO_IMPORTE_CUOTA_POR_RANGO_ETARIO AS
---SELECT * FROM TABLA123;
+CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PROMEDIO_IMPORTE_CUOTA_POR_RANGO_ETARIO AS
+    SELECT
+        R.rango_etario,
+        AVG(T.pago_tarj_monto_total / T.pago_tarj_cuotas) promedio_valor_cuota
+    FROM
+        CHRISTIAN_Y_LOS_MAKINSONS.BI_PAGOS_TARJETA T
+    JOIN
+        CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta TA ON T.pago_tarj_nro_tarjeta = TA.tarj_id
+    JOIN
+        CHRISTIAN_Y_LOS_MAKINSONS.BI_CLIENTES C ON TA.tarj_id_cliente = C.clie_codigo
+    JOIN
+        CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO R ON R.rango_etario_id = C.clie_rango_etario
+    GROUP BY R.rango_etario;
+GO
 
 ----------------------------------------
 
@@ -1100,9 +1121,16 @@ GO
 --de total de pagos sin el descuento, por cuatrimestre. Es decir, total de descuentos
 --sobre el total de pagos más el total de descuentos.
 
---CREATE VIEW PORCENTAJE_DESCUENTO_MEDIOS_PAGO AS
---SELECT * FROM TABLA123;
-
-
-----------------------------------------VIEWS TEST----------------------------------------
---SELECT * FROM dbo.V_TICKET_PROMEDIO_MENSUAL;
+CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_DESCUENTOS_MEDIOS_PAGO AS
+    SELECT
+        mp.mp_detalle,
+        SUM(p.pago_descuento) / (SUM(p.pago_total) + SUM(p.pago_descuento)) * 100 porcentaje_descuentos,
+        ti.tiempo_cuatrimestre,
+        ti.tiempo_anio
+    FROM
+        CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_MEDIOS_PAGO mp
+    JOIN CHRISTIAN_Y_LOS_MAKINSONS.Pago p ON mp.mp_cod = p.pago_medio
+    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS t ON p.pago_nro_ticket = t.ticket_id
+    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO ti ON t.ticket_tiempo = ti.tiempo_id
+GROUP BY mp.mp_detalle, ti.tiempo_cuatrimestre, ti.tiempo_anio
+GO
