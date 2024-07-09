@@ -859,42 +859,46 @@ GO
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_items_ticket
 AS
 BEGIN
-	INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Items_Ticket(
-		producto_codigo,
-		ticket_numero,
-		cantidad,
+    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.Items_Ticket(
+        producto_codigo,
+        ticket_numero,
+        cantidad,
         promo_cod,
         precio_producto,
         precio_producto_desc
     )
     SELECT DISTINCT
         P.prod_codigo,
-        T.ticket_id,
+        M.TICKET_NUMERO,
         M.TICKET_DET_CANTIDAD,
         M.PROMO_CODIGO,
         M.PRODUCTO_PRECIO,
         M.PROMO_APLICADA_DESCUENTO
     FROM gd_esquema.Maestra AS M
-        JOIN CHRISTIAN_Y_LOS_MAKINSONS.Producto AS P ON M.PRODUCTO_NOMBRE = P.prod_nombre
-        JOIN CHRISTIAN_Y_LOS_MAKINSONS.Sucursal AS S ON
-            M.SUCURSAL_NOMBRE = S.suc_nombre AND
-            M.SUCURSAL_DIRECCION = S.suc_direccion AND
-            M.SUCURSAL_LOCALIDAD = S.suc_localidad AND
-            M.SUCURSAL_PROVINCIA = S.suc_provincia
-        JOIN CHRISTIAN_Y_LOS_MAKINSONS.Ticket AS T ON T.ticket_numero = M.TICKET_NUMERO
-        LEFT JOIN CHRISTIAN_Y_LOS_MAKINSONS.Promocion PR ON M.PROMO_CODIGO = PR.promo_cod
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.Producto AS P 
+		ON M.PRODUCTO_NOMBRE = P.prod_nombre
+		AND M.PRODUCTO_MARCA = P.prod_marca
+		AND M.PRODUCTO_DESCRIPCION = P.prod_detalle
+    JOIN CHRISTIAN_Y_LOS_MAKINSONS.Sucursal AS S 
+        ON M.SUCURSAL_NOMBRE = S.suc_nombre 
+        AND M.SUCURSAL_DIRECCION = S.suc_direccion  
+        AND M.SUCURSAL_LOCALIDAD = S.suc_localidad 
+        AND M.SUCURSAL_PROVINCIA = S.suc_provincia
+    JOIN CHRISTIAN_Y_LOS_MAKINSONS.Ticket AS T 
+        ON T.ticket_numero = M.TICKET_NUMERO
+    LEFT JOIN CHRISTIAN_Y_LOS_MAKINSONS.Promocion AS PR 
+        ON M.PROMO_CODIGO = PR.promo_cod
     WHERE
-        M.TICKET_DET_CANTIDAD IS NOT NULL AND
-        M.PRODUCTO_NOMBRE IS NOT NULL AND
-        M.SUCURSAL_NOMBRE IS NOT NULL AND
-        M.SUCURSAL_DIRECCION IS NOT NULL AND
-        M.SUCURSAL_LOCALIDAD IS NOT NULL AND
-        M.SUCURSAL_PROVINCIA IS NOT NULL AND
-        M.TICKET_NUMERO IS NOT NULL;
+        M.TICKET_DET_CANTIDAD IS NOT NULL 
+        AND M.PRODUCTO_NOMBRE IS NOT NULL 
+        AND M.SUCURSAL_NOMBRE IS NOT NULL 
+        AND M.SUCURSAL_DIRECCION IS NOT NULL 
+        AND M.SUCURSAL_LOCALIDAD IS NOT NULL 
+        AND M.SUCURSAL_PROVINCIA IS NOT NULL 
+        AND M.TICKET_NUMERO IS NOT NULL
+
 END
 GO
-
- 
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.migrar_pagos_tarjeta
 AS
 BEGIN
