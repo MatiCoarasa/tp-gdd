@@ -869,7 +869,7 @@ BEGIN
     )
     SELECT DISTINCT
         P.prod_codigo,
-        M.TICKET_NUMERO,
+        T.ticket_id,
         M.TICKET_DET_CANTIDAD,
         M.PROMO_CODIGO,
         M.PRODUCTO_PRECIO,

@@ -84,6 +84,7 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO (
 );
 GO
 
+
 ALTER TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO
 	ADD CONSTRAINT check_tiempo_mes CHECK (tiempo_mes > 0 AND tiempo_mes <= 12);
 ALTER TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO
@@ -232,13 +233,14 @@ GO
 
 --DANI
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_PAGOS_TARJETA (
-	pago_tarj_fecha SMALLDATETIME,
-	pago_tarj_sucursal INT,
+    pago_tarj_anio INT, 
+    pago_tarj_mes INT,
+    pago_tarj_sucursal INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL(suc_numero),
     pago_tarj_nro_pago INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Pago(pago_id),
     pago_tarj_nro_tarjeta INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta(tarj_id),
-	pago_tarj_medio_pago DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_MEDIOS_PAGO(mp_cod),
-	pago_tarj_cuotas DECIMAL(18,0) NULL,
-	pago_tarj_monto_total DECIMAL(18,2) NULL
+    pago_tarj_medio_pago DECIMAL(18,0) FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_MEDIOS_PAGO(mp_cod),
+    pago_tarj_cuotas DECIMAL(18,0) NULL,
+    pago_tarj_monto_total DECIMAL(18,2) NULL
 );
 GO
 
@@ -627,33 +629,65 @@ GO
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_PAGOS_TARJETA
 AS
 BEGIN
-	INSERT INTO BI_PAGOS_TARJETA(pago_tarj_fecha, pago_tarj_sucursal, pago_tarj_nro_tarjeta, pago_tarj_medio_pago, pago_tarj_nro_pago, pago_tarj_cuotas, pago_tarj_monto_total)
-	SELECT
-		TICK.ticket_fecha_hora_venta, C.id_sucursal, T.tarj_id, P.pago_medio ,P.pago_nro_ticket, P.pago_cant_cuotas, P.pago_total
-	FROM
-		CHRISTIAN_Y_LOS_MAKINSONS.Pago p 
-	JOIN 
-		CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago mp
-	ON 
-		p.pago_medio = mp.mp_cod
-	JOIN
-		CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta T
-	ON
-		T.tarj_nro = P.pago_tarjeta_nro
-	JOIN
-		CHRISTIAN_Y_LOS_MAKINSONS.Items_Ticket IT
-	ON
-		P.pago_nro_ticket = IT.ticket_numero
-	JOIN
-		CHRISTIAN_Y_LOS_MAKINSONS.Ticket TICK
-	 ON
-		IT.ticket_numero= TICK.ticket_id
-	JOIN
-		CHRISTIAN_Y_LOS_MAKINSONS.BI_CAJAS C
-	ON
-		TICK.ticket_caja_id = C.caja_id
+    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.BI_PAGOS_TARJETA(
+        pago_tarj_anio, 
+        pago_tarj_mes, 
+        pago_tarj_sucursal, 
+        pago_tarj_nro_tarjeta, 
+        pago_tarj_medio_pago, 
+        pago_tarj_nro_pago, 
+        pago_tarj_cuotas, 
+        pago_tarj_monto_total
+    )
+    SELECT
+        D.tiempo_anio, 
+        D.tiempo_mes, 
+        SUC.suc_numero, 
+        T.tarj_id, 
+        MP.mp_cod, 
+        P.pago_nro_ticket, 
+        P.pago_cant_cuotas, 
+        P.pago_total
+    FROM
+        CHRISTIAN_Y_LOS_MAKINSONS.Pago P 
+    JOIN 
+        CHRISTIAN_Y_LOS_MAKINSONS.Medio_Pago MP
+        ON P.pago_medio = MP.mp_cod
+    JOIN
+        CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta T
+        ON T.tarj_nro = P.pago_tarjeta_nro
+    JOIN
+        CHRISTIAN_Y_LOS_MAKINSONS.Items_Ticket IT
+        ON P.pago_nro_ticket = IT.ticket_numero
+    JOIN
+        CHRISTIAN_Y_LOS_MAKINSONS.Ticket TICK
+        ON IT.ticket_numero = TICK.ticket_id
+    JOIN
+        CHRISTIAN_Y_LOS_MAKINSONS.BI_CAJAS C
+        ON TICK.ticket_caja_id = C.caja_id
+    JOIN
+        CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO D
+        ON YEAR(TICK.ticket_fecha_hora_venta) = D.tiempo_anio
+        AND MONTH(TICK.ticket_fecha_hora_venta) = D.tiempo_mes
+    JOIN
+        CHRISTIAN_Y_LOS_MAKINSONS.Sucursal S
+        ON C.id_sucursal = S.suc_numero
+    JOIN
+        CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION U
+        ON S.suc_localidad = U.ubi_localidad
+        AND S.suc_provincia = U.ubi_provincia
+    JOIN
+        CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL SUC
+        ON SUC.suc_numero = S.suc_numero
+        AND SUC.suc_ubicacion = U.ubi_id
 END
 GO
+
+
+
+
+
+
 ----------------------------------------EXEC PROCEDURES----------------------------------------
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_TIEMPO;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_UBICACION;
@@ -946,8 +980,6 @@ CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_CATEGORIAS_MAYOR_DESCUENTO_PROMOCIONES A
 ) AS CombinedResults;
 GO
 
-
-
 --CREATE VIEW CATEGORIAS_MAYOR_DESCUENTO_PROMOCIONES AS
 --SELECT * FROM TABLA123;
 
@@ -1067,17 +1099,17 @@ GO
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_SUCURSALES_MAYOR_PAGOS_CUOTAS AS
 WITH SucursalesOrdenadas AS (
     SELECT 
-        YEAR(T.pago_tarj_fecha) AS AÑO,
-        MONTH(T.pago_tarj_fecha) AS MES,
+        T.pago_tarj_anio AS AÑO,
+        T.pago_tarj_mes AS MES,
         T.pago_tarj_sucursal,
         T.pago_tarj_medio_pago,
         SUM(T.pago_tarj_monto_total) AS MontoTotal,
-        ROW_NUMBER() OVER (PARTITION BY YEAR(T.pago_tarj_fecha), MONTH(T.pago_tarj_fecha), T.pago_tarj_medio_pago ORDER BY SUM(T.pago_tarj_monto_total) DESC) AS RN
+        ROW_NUMBER() OVER (PARTITION BY T.pago_tarj_anio, T.pago_tarj_mes, T.pago_tarj_medio_pago ORDER BY SUM(T.pago_tarj_monto_total) DESC) AS RN
     FROM 
         CHRISTIAN_Y_LOS_MAKINSONS.BI_PAGOS_TARJETA T
     GROUP BY
-        YEAR(T.pago_tarj_fecha),
-        MONTH(T.pago_tarj_fecha),
+        T.pago_tarj_anio,
+        T.pago_tarj_mes,
         T.pago_tarj_sucursal,
         T.pago_tarj_medio_pago
 )
@@ -1134,3 +1166,4 @@ CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_DESCUENTOS_MEDIOS_PAGO AS
     JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO ti ON t.ticket_tiempo = ti.tiempo_id
 GROUP BY mp.mp_detalle, ti.tiempo_cuatrimestre, ti.tiempo_anio
 GO
+
