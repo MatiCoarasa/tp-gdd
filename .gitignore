@@ -9,3 +9,5 @@ gd_esquema.Schema.sql
 migrate.sh
 
 .DS_Store
+entrega/
+*.zip
