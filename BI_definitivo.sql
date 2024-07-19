@@ -511,6 +511,7 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_ENVIOS (
 );
 GO
 
+--PENDIENTE
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_PRODUCTOS (
     total_vendidos INT,
     categoria_id INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CATEGORIAS(cat_id),
@@ -519,6 +520,7 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_PRODUCTOS (
 );
 GO
 
+--PENDIENTE
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_PROMOCIONES (
 	promo_detalle NVARCHAR(255),
 	tiempo_id INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO(tiempo_id)
@@ -526,6 +528,8 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_PROMOCIONES (
 GO
 
 ----------------------------------------CREAR PROCEDURES TABLAS DE HECHOS----------------------------------------
+--PENDIENTE
+--Trae vacío
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_VENTAS AS
 BEGIN
     INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.BI_VENTAS(
@@ -607,7 +611,7 @@ BEGIN
 		medio_pago_id
     )
     SELECT DISTINCT
-		P.pago_total,
+		SUM(P.pago_total),
 		SUC.suc_id, 
         D.tiempo_id,
         MP.mp_cod
@@ -647,6 +651,8 @@ BEGIN
         CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL SUC
         ON SUC.suc_id = S.suc_numero
         AND SUC.suc_ubicacion = U.ubi_id
+--	group by suc_id, tiempo_id, mp_cod
+--	order by suc_id, tiempo_id, mp_cod
 END
 GO
 
@@ -734,32 +740,6 @@ GO
 --Valor promedio de las ventas (en $) segun la localidad, anio y mes.
 --Se calcula en funcion de la sumatoria del importe de las ventas sobre el total de las mismas.
 
-
-
---CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_TICKET_PROMEDIO_MENSUAL AS
---SELECT
---	U.ubi_localidad AS Localidad,
---	TI.tiempo_anio AS Año,
---	TI.tiempo_mes AS Mes,
---	ROUND(AVG(T.ticket_total_ticket), 2) AS Promedio_Venta
---FROM 
---	CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS T
---	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CAJAS C
---		ON C.caja_id = T.ticket_caja_id
---	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL S
---		ON C.id_sucursal = S.suc_numero
---	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION U
---		ON U.ubi_id = S.suc_ubicacion
---    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO TI
---        ON T.ticket_tiempo = TI.tiempo_id
---GROUP BY 
---	U.ubi_localidad, 
---	TI.tiempo_anio,
---	TI.tiempo_mes
---GO
-
-
-
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_TICKET_PROMEDIO_MENSUAL AS
 SELECT
 	U.ubi_localidad AS Localidad,
@@ -788,10 +768,10 @@ GO
 ----------------------------------------
 
 --VISTA 2: Cantidad Unidades Promedio
---Cantidad promedio de art�culos que se venden en funci�n de los tickets seg�n el turno
---para cada cuatrimestre de cada a�o. Se obtiene sumando la cantidad de art�culos de
+--Cantidad promedio de articulos que se venden en funcion de los tickets segun el turno
+--para cada cuatrimestre de cada anio. Se obtiene sumando la cantidad de articulos de
 --todos los tickets correspondientes sobre la cantidad de tickets. Si un producto tiene
---m�s de una unidad en un ticket, para el indicador se consideran todas las unidades.
+--mas de una unidad en un ticket, para el indicador se consideran todas las unidades.
 
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_CANTIDAD_UNIDADES_PROMEDIO AS
     WITH VentasConRangosHorarios AS (
@@ -896,7 +876,7 @@ GO
 
 ----------------------------------------
 
---VENTAS_POR_TURNO
+--VISTA 4: VENTAS_POR_TURNO
 --Cantidad de ventas registradas por turno para cada localidad seg�n el mes de cada a�o.
 
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_VENTAS_POR_TURNO AS
@@ -1139,7 +1119,8 @@ CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_LOCALIDADES_MAYOR_COSTO_ENVIO AS
 GO
 ----------------------------------------
 
---SUCURSALES_MAYOR_PAGOS_CUOTAS
+
+--VISTA 10: SUCURSALES_MAYOR_PAGOS_CUOTAS
 --Las 3 sucursales con el mayor importe de pagos en cuotas, seg�n el medio de pago,
 --mes y a�o. Se calcula sumando los importes totales de todas las ventas en cuotas.
 
@@ -1175,9 +1156,8 @@ GO
 --SELECT * FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_PAGOS_TARJETA
 ----------------------------------------
 
---PROMEDIO_IMPORTE_CUOTA_POR_RANGO_ETARIO
+--VISTA 11: PROMEDIO_IMPORTE_CUOTA_POR_RANGO_ETARIO
 --Promedio de importe de la cuota en funci�n del rango etario del cliente.
-
 
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PROMEDIO_IMPORTE_CUOTA_POR_RANGO_ETARIO AS
     SELECT
@@ -1193,7 +1173,7 @@ GO
 
 ----------------------------------------
 
---PORCENTAJE_DESCUENTO_MEDIOS_PAGO
+--VISTA 12: PORCENTAJE_DESCUENTO_MEDIOS_PAGO
 --Porcentaje de descuento aplicado por cada medio de pago en funci�n del valor
 --de total de pagos sin el descuento, por cuatrimestre. Es decir, total de descuentos
 --sobre el total de pagos m�s el total de descuentos.
