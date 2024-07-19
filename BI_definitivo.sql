@@ -7,8 +7,8 @@ GO
 --(X) VENTAS
 --(X) PAGOS
 --(X) ENVIOS
---(X) PRODUCTOS --> revisar
---(X) PROMOCIONES --> revisar
+--(X) PRODUCTOS
+--(X) PROMOCIONES
 
 --TABLAS DIMENSIONALES
 --(X) UBICACION
@@ -22,7 +22,7 @@ GO
 --(X) SUBCATEGORIAS
 --(X) CATEGORIA_SUBCATEGORIA
 --(X) EMPLEADOS
---(X) CLIENTES
+--(x) CLIENTES
 
 --(X) Ponerles DIM a las tablas dimensionales
 --(X) Convertir en tablas dimensionales o eliminar las tablas que sobran
@@ -42,9 +42,9 @@ GO
 --(X) CLIENTES
 
 --PROCEDURES MIGRAR TABLAS DE HECHOS
---( ) VENTAS
---(X) PAGOS --> revisar
---(X) ENVIOS --> revisar
+--( ) VENTAS --> Migración hecha, no funciona, tabla vacía
+--(X) PAGOS --> Revisar
+--(X) ENVIOS --> Revisar
 --( ) PRODUCTOS
 --( ) PROMOCIONES
 
@@ -528,7 +528,72 @@ GO
 ----------------------------------------CREAR PROCEDURES TABLAS DE HECHOS----------------------------------------
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_VENTAS AS
 BEGIN
-    SELECT * FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_VENTAS
+    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.BI_VENTAS(
+		tiempo_id,
+		turno_id,
+		sucursal_id,
+		caja_id,
+		ubicacion_id,
+		rango_cliente_id,
+		rango_empleado_id,
+		medio_pago_id,
+		total_venta,
+		total_descuento,
+		promedio_cuotas,
+		total_cantidad_productos
+	)
+	SELECT DISTINCT
+        TIE.tiempo_id,
+		TUR.turno_id,
+		SUC.suc_id,
+		CAJ.caja_id,
+		UBI.ubi_id,
+		DIM_CLIE.clie_rango_etario,
+		DIM_EMP.emp_rango_etario,
+		MP.mp_cod,
+		SUM(TIC.ticket_total_ticket),
+		SUM((TIC.ticket_total_descuento_aplicado + TIC.ticket_total_descuento_aplicado_mp)),
+		AVG(PAG.pago_cant_cuotas),
+		COUNT(IT.cantidad)
+    FROM CHRISTIAN_Y_LOS_MAKINSONS.Ticket TIC
+    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO TIE
+        ON YEAR(TIC.ticket_fecha_hora_venta) = TIE.tiempo_anio
+        AND MONTH(TIC.ticket_fecha_hora_venta) = TIE.tiempo_mes
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TURNO TUR
+		ON TUR.turno_desc = CHRISTIAN_Y_LOS_MAKINSONS.ObtenerRangoHorario(TIC.ticket_fecha_hora_venta)
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CAJAS CAJ
+		ON CAJ.caja_id = TIC.ticket_caja_id
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL SUC
+		ON suc_id = CAJ.sucursal_id
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION UBI
+		ON UBI.ubi_id = SUC.suc_ubicacion
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.Pago PAG
+		ON PAG.pago_nro_ticket = TIC.ticket_numero
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_MEDIOS_PAGO MP
+		ON MP.mp_cod = PAG.pago_medio
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.Pago_tarjeta PT
+		ON PT.pago_tarj_nro_pago = PAG.pago_id
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta TARJ
+		ON TARJ.tarj_nro = PT.pago_tarj_nro_tarjeta
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.Cliente CLIE
+		ON CLIE.clie_codigo = TARJ.tarj_id_cliente
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CLIENTES DIM_CLIE
+		ON DIM_CLIE.clie_rango_etario = CHRISTIAN_Y_LOS_MAKINSONS.ObtenerRangoEtario(CLIE.clie_fecha_nacimiento)
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.Empleado EMP
+		ON EMP.emp_legajo = TIC.ticket_emp_legajo
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_EMPLEADOS DIM_EMP
+		ON DIM_EMP.emp_legajo = EMP.emp_legajo
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.Items_Ticket IT
+		ON IT.ticket_numero = TIC.ticket_numero
+	GROUP BY
+		TIE.tiempo_id,
+		TUR.turno_id,
+		SUC.suc_id,
+		CAJ.caja_id,
+		UBI.ubi_id,
+		DIM_CLIE.clie_rango_etario,
+		DIM_EMP.emp_rango_etario,
+		MP.mp_cod
 END
 GO
 
@@ -544,8 +609,7 @@ BEGIN
     SELECT DISTINCT
 		P.pago_total,
 		SUC.suc_id, 
-        D.tiempo_anio, 
-        D.tiempo_mes,
+        D.tiempo_id,
         MP.mp_cod
     FROM
         CHRISTIAN_Y_LOS_MAKINSONS.Pago P 
@@ -669,6 +733,32 @@ GO
 --VISTA 1: Ticket Promedio mensual
 --Valor promedio de las ventas (en $) segun la localidad, anio y mes.
 --Se calcula en funcion de la sumatoria del importe de las ventas sobre el total de las mismas.
+
+
+
+--CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_TICKET_PROMEDIO_MENSUAL AS
+--SELECT
+--	U.ubi_localidad AS Localidad,
+--	TI.tiempo_anio AS Año,
+--	TI.tiempo_mes AS Mes,
+--	ROUND(AVG(T.ticket_total_ticket), 2) AS Promedio_Venta
+--FROM 
+--	CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS T
+--	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CAJAS C
+--		ON C.caja_id = T.ticket_caja_id
+--	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL S
+--		ON C.id_sucursal = S.suc_numero
+--	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION U
+--		ON U.ubi_id = S.suc_ubicacion
+--    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO TI
+--        ON T.ticket_tiempo = TI.tiempo_id
+--GROUP BY 
+--	U.ubi_localidad, 
+--	TI.tiempo_anio,
+--	TI.tiempo_mes
+--GO
+
+
 
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_TICKET_PROMEDIO_MENSUAL AS
 SELECT
