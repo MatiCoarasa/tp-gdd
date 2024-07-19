@@ -7,8 +7,8 @@ GO
 --(X) VENTAS
 --(X) PAGOS
 --(X) ENVIOS
---(X) PRODUCTOS
---(X) PROMOCIONES
+--(X) PRODUCTOS --> revisar
+--(X) PROMOCIONES --> revisar
 
 --TABLAS DIMENSIONALES
 --(X) UBICACION
@@ -22,7 +22,7 @@ GO
 --(X) SUBCATEGORIAS
 --(X) CATEGORIA_SUBCATEGORIA
 --(X) EMPLEADOS
---(x) CLIENTES
+--(X) CLIENTES
 
 --(X) Ponerles DIM a las tablas dimensionales
 --(X) Convertir en tablas dimensionales o eliminar las tablas que sobran
