@@ -5,30 +5,6 @@ GO
 
 --( ) DOCUMENTO QUE EXPLIQUE LAS TABLAS QUE CREAMOS Y JUSTIFIQUE LAS DECISIONES
 
---TABLAS DE HECHOS
---(X) VENTAS
---(X) ENVIOS
---(X) DESCUENTOS
-
---TABLAS DIMENSIONALES
---(X) UBICACION
---(X) TURNO
---(X) TIEMPO
---(X) SUCURSAL
---(X) RANGO_ETARIO
---(X) MEDIOS_PAGO
---(X) CAJAS
---(X) CATEGORIAS
---(X) SUBCATEGORIAS
---(X) CATEGORIA_SUBCATEGORIA
-
---(X) PROCEDURES MIGRAR TABLAS DIMENSIONALES
-
---(X) PROCEDURES MIGRAR TABLAS DE HECHOS
---(X) VENTAS --> Migración hecha, no funciona, tabla vacía
---(X) ENVIOS
---(X) DESCUENTOS
-
 ----------------------------------------BORRAR VIEWS----------------------------------------
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.V_TICKET_PROMEDIO_MENSUAL', 'V') IS NOT NULL DROP VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_TICKET_PROMEDIO_MENSUAL
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.V_CANTIDAD_UNIDADES_PROMEDIO', 'V') IS NOT NULL DROP VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_CANTIDAD_UNIDADES_PROMEDIO
@@ -49,7 +25,6 @@ GO
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_VENTAS', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_VENTAS
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_ENVIOS', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_ENVIOS
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_DESCUENTOS', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DESCUENTOS
-GO
 
 ----------------------------------------BORRAR DIMENSIONES----------------------------------------
 IF OBJECT_ID('CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CAJAS', 'U') IS NOT NULL DROP TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CAJAS
@@ -155,20 +130,6 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CAJAS (
 	caja_id INT PRIMARY KEY,
 	caja_tipo NVARCHAR(255) NOT NULL,
     sucursal_id INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL(suc_id)
-);
-GO
-
-CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_EMPLEADOS (
-    emp_legajo INT PRIMARY KEY,
-    emp_rango_etario INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO(rango_etario_id),
-	emp_sucursal INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL(suc_id)
-);
-GO
-
-CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CLIENTES (
-    clie_codigo INT PRIMARY KEY,
-    clie_rango_etario INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO(rango_etario_id),
-	clie_ubicacion INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION(ubi_id)
 );
 GO
 
@@ -368,44 +329,6 @@ BEGIN
 END
 GO
 
-CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_EMPLEADOS AS
-BEGIN
-    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_EMPLEADOS (
-		emp_legajo,
-		emp_rango_etario,
-		emp_sucursal
-    )
-    SELECT DISTINCT
-        E.emp_legajo,
-		R.rango_etario_id,
-		S.suc_id
-    FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL S
-	JOIN CHRISTIAN_Y_LOS_MAKINSONS.Empleado E ON E.emp_sucursal = S.suc_id
-    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO R
-        ON R.rango_etario = CHRISTIAN_Y_LOS_MAKINSONS.ObtenerRangoEtario(E.emp_fecha_nacimiento)
-END;
-GO
-
-CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_CLIENTES AS
-BEGIN
-    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CLIENTES (
-        clie_codigo,
-        clie_rango_etario,
-        clie_ubicacion
-    )
-    SELECT DISTINCT
-        C.clie_codigo,
-        R.rango_etario_id,
-        U.ubi_id
-    FROM CHRISTIAN_Y_LOS_MAKINSONS.Cliente C
-    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO R
-        ON R.rango_etario = CHRISTIAN_Y_LOS_MAKINSONS.ObtenerRangoEtario(C.clie_fecha_nacimiento)
-    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION U
-        ON U.ubi_localidad = C.clie_localidad
-        AND U.ubi_provincia = C.clie_provincia;
-END;
-GO
-
 ----------------------------------------EXEC PROCEDURES TABLAS DIMENSIONALES----------------------------------------
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_TIEMPO;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_UBICACION;
@@ -417,9 +340,6 @@ EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_CATEGORIAS;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_SUBCATEGORIAS;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_CATEGORIA_SUBCATEGORIA;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DIM_CAJAS;
-EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_EMPLEADOS;
-EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_CLIENTES;
-
 
 ----------------------------------------CREAR TABLAS DE HECHOS----------------------------------------
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_VENTAS (
@@ -435,19 +355,22 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_VENTAS (
     total_descuento DECIMAL(18,2) NOT NULL,
 	promedio_cuotas DECIMAL(18, 2),
     total_pagos_cuotas INT NOT NULL,
-    total_cuotas INT NOT NULL,
 	total_cantidad_productos INT NOT NULL,
-    total_cantidad_ventas INT NOT NULL
+	total_importe_cuotas INT,
+    total_cantidad_ventas INT NOT NULL,
+	total_cuotas INT NOT NULL,
 );
 GO
 
 CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_ENVIOS (
-    env_costo DECIMAL(18,2),
-    env_fecha_programada DATETIME,
-    env_hora_inicio DECIMAL(18,0),
-    env_hora_fin DECIMAL(18,0),
-    env_fecha_hora_entrega DATETIME,
-    env_estado NVARCHAR(255)
+	env_id INT IDENTITY(1,1) PRIMARY KEY,
+    env_cant_total INT,
+    env_cant_cumplidos INT,
+	env_rango_etario_clie INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO(rango_etario_id),
+	env_ubi_id INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION(ubi_id),
+	env_sucursal_id INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL(suc_id),
+	env_tiempo_id INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO(tiempo_id),
+	env_costo_total INT,
 );
 GO
 
@@ -480,6 +403,7 @@ BEGIN
 		promedio_cuotas,
 		total_cantidad_productos,
         total_pagos_cuotas,
+		total_importe_cuotas,
         total_cantidad_ventas,
         total_cuotas
 	)
@@ -497,6 +421,7 @@ SELECT
     AVG(PAG.pago_cant_cuotas) promedio_cant_cuotas,
     SUM(IT.cantidad) total_productos,
     COUNT(CASE WHEN PAG.pago_cant_cuotas > 1 THEN 1 END),
+	SUM(CASE WHEN PAG.pago_cant_cuotas > 1 THEN TIC.ticket_total_ticket ELSE 0 END),
     COUNT(*),
     SUM(COALESCE(PAG.pago_cant_cuotas, 0))
 FROM CHRISTIAN_Y_LOS_MAKINSONS.Ticket TIC
@@ -544,55 +469,46 @@ GO
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_ENVIOS AS
 BEGIN
     INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.BI_ENVIOS(
-		env_costo,
-		env_fecha_programada,
-		env_hora_inicio,
-		env_hora_fin,
-		env_fecha_hora_entrega,
-		env_estado
+		env_cant_total,
+		env_cant_cumplidos,
+		env_sucursal_id,
+		env_rango_etario_clie,
+		env_ubi_id,
+		env_tiempo_id,
+		env_costo_total
     )
-    SELECT DISTINCT
-		E.env_costo,
-		E.env_fecha_programada,
-		E.env_hora_inicio,
-		E.env_hora_fin,
-		E.env_fecha_hora_entrega,
-		E.env_estado
+    SELECT
+		COUNT(E.env_codigo),
+		COUNT(CASE WHEN DATEADD(HOUR, E.env_hora_fin, E.env_fecha_programada) <= E.env_fecha_hora_entrega THEN 1 END),
+		S.suc_id,
+		DIM_RANGO_CLIE.rango_etario_id,
+		U.ubi_id,
+	    T.tiempo_id,
+		SUM(E.env_costo)
     FROM CHRISTIAN_Y_LOS_MAKINSONS.Envio E
-	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CLIENTES C
-		ON E.env_nro_cliente = C.clie_codigo
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.Ticket TICK
+		ON E.env_nro_ticket = TICK.ticket_id
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.Caja CJ
+		ON CJ.id_caja = TICK.ticket_caja_id
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL S
+		ON S.suc_id = CJ.id_sucursal
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO T
+		ON T.tiempo_anio = YEAR(E.env_fecha_hora_entrega) AND T.tiempo_mes = MONTH(E.env_fecha_hora_entrega)
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.Pago PAG
+		ON PAG.pago_nro_ticket = TICK.ticket_id
+	LEFT JOIN CHRISTIAN_Y_LOS_MAKINSONS.Pago_tarjeta PT
+		ON PT.pago_tarj_nro_pago = PAG.pago_id
+	LEFT JOIN CHRISTIAN_Y_LOS_MAKINSONS.Tarjeta TARJ
+		ON TARJ.tarj_id = PT.pago_tarj_nro_tarjeta
+	LEFT JOIN CHRISTIAN_Y_LOS_MAKINSONS.Cliente CLIE
+		ON CLIE.clie_codigo = TARJ.tarj_id_cliente
+	LEFT JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO DIM_RANGO_CLIE
+		ON DIM_RANGO_CLIE.rango_etario = CHRISTIAN_Y_LOS_MAKINSONS.ObtenerRangoEtario(CLIE.clie_fecha_nacimiento)
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION U
+		ON U.ubi_localidad = CLIE.clie_localidad AND U.ubi_provincia = CLIE.clie_provincia
+	GROUP BY suc_id, rango_etario_id, clie_localidad, ubi_id, tiempo_id
 END;
 GO
-
-CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_PRODUCTOS AS
-BEGIN
-    INSERT INTO CHRISTIAN_Y_LOS_MAKINSONS.BI_PRODUCTOS (total_vendidos, categoria_id, sucursal_id, tiempo_id)
-    SELECT
-        SUM(IT.cantidad),
-        categoria_cod,
-        SUC.suc_id,
-        TI.tiempo_id
-    FROM CHRISTIAN_Y_LOS_MAKINSONS.Ticket T
-    JOIN CHRISTIAN_Y_LOS_MAKINSONS.Items_Ticket IT on T.ticket_id = IT.ticket_numero
-    JOIN CHRISTIAN_Y_LOS_MAKINSONS.Producto P ON IT.producto_codigo = P.prod_codigo
-    JOIN CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_producto Scdp on P.prod_codigo = Scdp.prod_codigo
-    JOIN CHRISTIAN_Y_LOS_MAKINSONS.Sub_categoria ON P.prod_sub_categoria = Sub_categoria.sub_cat_cod
-    JOIN CHRISTIAN_Y_LOS_MAKINSONS.Sub_categorias_de_categoria Scdc on Sub_categoria.sub_cat_cod = Scdc.sub_cat_cod_categoria
-    JOIN CHRISTIAN_Y_LOS_MAKINSONS.Categoria C on Scdc.cod_categoria = C.categoria_cod
-    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CAJAS CAJ
-        ON CAJ.caja_id = T.ticket_caja_id
-    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL SUC
-        ON suc_id = CAJ.sucursal_id
-    JOIN BI_DIM_TIEMPO TI ON YEAR(T.ticket_fecha_hora_venta) = TI.tiempo_anio
-                                 AND MONTH(T.ticket_fecha_hora_venta) = TI.tiempo_mes
-    GROUP BY categoria_cod, SUC.suc_id, TI.tiempo_id;
-END
-GO
-
---     total_vendidos INT,
---     categoria_id INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CATEGORIAS(cat_id),
---     sucursal_id INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL(suc_id),
---     tiempo_id INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO(tiempo_id)
 
 CREATE PROCEDURE CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DESCUENTOS AS
 BEGIN
@@ -630,10 +546,8 @@ END
 GO
 
 ----------------------------------------EXEC PROCEDURES TABLAS HECHOS----------------------------------------
-
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_VENTAS;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_ENVIOS;
-EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_PRODUCTOS;
 EXEC CHRISTIAN_Y_LOS_MAKINSONS.MIGRAR_BI_DESCUENTOS;
 GO
 
@@ -644,28 +558,6 @@ GO
 --Se calcula en funcion de la sumatoria del importe de las ventas sobre el total de las mismas.
 
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_TICKET_PROMEDIO_MENSUAL AS
-SELECT
-	U.ubi_localidad Localidad,
-	TI.tiempo_anio Anio,
-	TI.tiempo_mes Mes,
-	CAST(ROUND(AVG(V.total_venta), 2) AS DECIMAL(10, 2)) Promedio_venta
-FROM 
-	CHRISTIAN_Y_LOS_MAKINSONS.BI_VENTAS V
-	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CAJAS C
-		ON C.caja_id = V.caja_id
-	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL S
-		ON C.sucursal_id = S.suc_id
-	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION U
-		ON U.ubi_id = S.suc_ubicacion
-    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO TI
-        ON V.tiempo_id = TI.tiempo_id
-GROUP BY 
-	U.ubi_localidad, 
-	TI.tiempo_anio,
-	TI.tiempo_mes
-GO
-
-CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_TICKET_PROMEDIO_MENSUAL2 AS
 SELECT
 	U.ubi_localidad Localidad,
 	TI.tiempo_anio Anio,
@@ -687,6 +579,9 @@ GROUP BY
 	TI.tiempo_mes
 GO
 
+--SELECT * FROM CHRISTIAN_Y_LOS_MAKINSONS.V_TICKET_PROMEDIO_MENSUAL;
+--GO
+
 ----------------------------------------
 
 --VISTA 2: Cantidad Unidades Promedio
@@ -696,33 +591,34 @@ GO
 --mas de una unidad en un ticket, para el indicador se consideran todas las unidades.
 
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_CANTIDAD_UNIDADES_PROMEDIO AS
-SELECT
-    CAST(SUM(total_cantidad_productos) AS DECIMAL) / CAST(SUM(total_cantidad_ventas) AS DECIMAL) promedio_articulos_por_ticket,
-    TU.turno_desc,
-    TI.tiempo_cuatrimestre,
-    tiempo_anio
-FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_VENTAS V
-JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO TI ON V.tiempo_id = TI.tiempo_id
-JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TURNO TU ON V.turno_id = TU.turno_id
-GROUP BY TI.tiempo_cuatrimestre, TU.turno_desc, tiempo_anio;
+	SELECT
+		tiempo_anio Anio,
+		TI.tiempo_cuatrimestre Cuatrimestre,
+		TU.turno_desc Turno,
+		CAST(CAST(SUM(total_cantidad_productos) AS DECIMAL) / CAST(SUM(total_cantidad_ventas) AS DECIMAL) AS DECIMAL(10, 2)) Promedio_Articulos
+	FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_VENTAS V
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO TI ON V.tiempo_id = TI.tiempo_id
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TURNO TU ON V.turno_id = TU.turno_id
+	GROUP BY tiempo_anio, tiempo_cuatrimestre, turno_desc
+GO
 
 --SELECT * FROM V_CANTIDAD_UNIDADES_PROMEDIO;
 
 ----------------------------------------
 
 --VISTA 3: Porcentaje anual de ventas
---Porcentaje anual de ventas registradas por rango etario del empleado seg�n el tipo de caja para cada cuatrimestre.
+--Porcentaje anual de ventas registradas por rango etario del empleado segun el tipo de caja para cada cuatrimestre.
 --Se calcula tomando la cantidad de ventas correspondientes sobre el total de ventas anual.
 
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_ANUAL_VENTAS AS
 SELECT
-    CAST(SUM(total_cantidad_ventas) AS DECIMAL) /
+    CAST(
+	(CAST(SUM(total_cantidad_ventas) AS DECIMAL) /
     (SELECT
          CAST(SUM(V2.total_cantidad_ventas) AS DECIMAL)
      FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_VENTAS V2
      JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO T2 ON V2.tiempo_id = T2.tiempo_id
-     WHERE T2.tiempo_cuatrimestre = T.tiempo_cuatrimestre
-     GROUP BY T2.tiempo_anio) * 100 porcentaje_ventas,
+     WHERE T2.tiempo_anio = T.tiempo_anio) * 100) AS DECIMAL(10, 2)) Porcentaje_Ventas,
     RE.rango_etario rango_etario_empleado,
     C.caja_tipo,
     T.tiempo_cuatrimestre cuatrimestre
@@ -730,7 +626,11 @@ FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_VENTAS V
 JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO RE ON V.rango_empleado_id = RE.rango_etario_id
 JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CAJAS C ON V.caja_id = C.caja_id
 JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO T ON V.tiempo_id = T.tiempo_id
-GROUP BY RE.rango_etario, C.caja_tipo, T.tiempo_cuatrimestre;
+GROUP BY RE.rango_etario, C.caja_tipo, tiempo_anio, T.tiempo_cuatrimestre
+GO
+
+--SELECT * FROM V_PORCENTAJE_ANUAL_VENTAS;
+--GO
 
 ----------------------------------------
 
@@ -738,33 +638,25 @@ GROUP BY RE.rango_etario, C.caja_tipo, T.tiempo_cuatrimestre;
 --Cantidad de ventas registradas por turno para cada localidad seg�n el mes de cada a�o.
 
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_VENTAS_POR_TURNO AS
-SELECT
-    U.ubi_localidad AS Localidad,
-    DATEPART(YEAR, T.ticket_fecha_hora_venta) AS Anio,
-    DATEPART(MONTH, T.ticket_fecha_hora_venta) AS Mes,
-    D.turno_desc AS Turno,
-    COUNT(*) AS Cantidad_Ventas
-FROM
-    CHRISTIAN_Y_LOS_MAKINSONS.Ticket T
-INNER JOIN
-    CHRISTIAN_Y_LOS_MAKINSONS.Caja C ON T.ticket_caja_id = C.id_caja
-INNER JOIN
-    CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL S ON C.id_sucursal = S.suc_numero
-INNER JOIN
-    CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION U ON S.suc_ubicacion = U.ubi_id
-INNER JOIN
-    CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TURNO D ON
-        (CASE
-            WHEN CONVERT(TIME, T.ticket_fecha_hora_venta) >= '08:00:00' AND CONVERT(TIME, T.ticket_fecha_hora_venta) < '12:00:01' THEN '08:00 - 12:00'
-            WHEN CONVERT(TIME, T.ticket_fecha_hora_venta) >= '12:00:01' AND CONVERT(TIME, T.ticket_fecha_hora_venta) < '16:00:01' THEN '12:00 - 16:00'
-            WHEN CONVERT(TIME, T.ticket_fecha_hora_venta) >= '16:00:00' AND CONVERT(TIME, T.ticket_fecha_hora_venta) <= '20:00:00' THEN '16:00 - 20:00'
-            ELSE 'VENTA FUERA DE TURNO'
-        END) = D.turno_desc
-GROUP BY
-    U.ubi_localidad,
-    DATEPART(YEAR, T.ticket_fecha_hora_venta),
-    DATEPART(MONTH, T.ticket_fecha_hora_venta),
-    D.turno_desc;
+	SELECT
+		TIE.tiempo_anio,
+		TIE.tiempo_mes,
+		U.ubi_localidad,
+		TUR.turno_desc,
+		COUNT(*) AS Cantidad_Ventas
+	FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_VENTAS V
+	INNER JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION U
+		ON U.ubi_id = V.ubicacion_id
+	INNER JOIN
+		CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TURNO TUR
+		ON TUR.turno_id = V.turno_id
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO TIE
+		ON TIE.tiempo_id = V.tiempo_id 
+	GROUP BY
+		TIE.tiempo_anio,
+		TIE.tiempo_mes,
+		U.ubi_localidad,
+		TUR.turno_desc
 GO
 
 ----------------------------------------
@@ -774,29 +666,31 @@ GO
 
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_DESCUENTO_APLICADO AS
     SELECT
-        SUM(D.descuento_por_promociones_aplicado) / SUM(D.total_importe) * 100 descuento_aplicado,
-        T.tiempo_mes mes
+        T.tiempo_anio Anio,
+		T.tiempo_mes Mes,
+		CAST(SUM(D.descuento_por_promociones_aplicado) / SUM(D.total_importe) * 100 AS DECIMAL(10, 2)) Descuento
     FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_DESCUENTOS D
     JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO T ON D.tiempo_id = T.tiempo_id
-GROUP BY T.tiempo_mes;
-
+	GROUP BY T.tiempo_mes, tiempo_anio;
+GO
 
 ----------------------------------------
 
---CATEGORIAS_MAYOR_DESCUENTO_PROMOCIONES
+--VISTA 6: CATEGORIAS_MAYOR_DESCUENTO_PROMOCIONES
 --Las tres categor�as de productos con mayor descuento aplicado a partir de
---promociones para cada cuatrimestre de cada año.
+--promociones para cada cuatrimestre de cada a�o.
 
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_CATEGORIAS_MAYOR_DESCUENTO_PROMOCIONES AS
     SELECT TOP 3
-        SUM(D.descuento_por_promociones_aplicado) total_descuento,
-        cat_detalle,
+        SUM(D.descuento_por_promociones_aplicado) AS Mayor_Desc_Aplicado,
         T.tiempo_mes mes
     FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_DESCUENTOS D
     JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO T ON D.tiempo_id = T.tiempo_id
-    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CATEGORIAS C ON D.categoria_id = C.cat_id
-GROUP BY T.tiempo_mes, cat_detalle
-ORDER BY total_descuento DESC;
+	GROUP BY T.tiempo_mes;
+GO
+
+--CREATE VIEW CATEGORIAS_MAYOR_DESCUENTO_PROMOCIONES AS
+--SELECT * FROM TABLA123;
 
 ----------------------------------------
 
@@ -805,65 +699,46 @@ ORDER BY total_descuento DESC;
 
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_CUMPLIMIENTO_ENVIOS AS
 	SELECT
-		YEAR(env.env_fecha_programada) AS Anio,
-		MONTH(env.env_fecha_programada) AS Mes,
-		U.ubi_localidad AS Sucursal,
-		COUNT(CASE 
-				WHEN CAST(env.env_fecha_hora_entrega AS DATE) = CAST(env.env_fecha_programada AS DATE) AND 
-					 env.env_fecha_hora_entrega BETWEEN CAST(env.env_fecha_programada AS DATETIME) AND 
-					 DATEADD(SECOND, env.env_hora_fin, CAST(env.env_fecha_programada AS DATETIME)) 
-				THEN env.env_codigo 
-			  END
-			) AS Envios_Entregados_A_Tiempo,
-		COUNT(*) AS Total_Envios_Programados,
-		100.0 * COUNT(CASE 
-						  WHEN CAST(env.env_fecha_hora_entrega AS DATE) = CAST(env.env_fecha_programada AS DATE) AND 
-							   env.env_fecha_hora_entrega BETWEEN CAST(env.env_fecha_programada AS DATETIME) AND 
-							   DATEADD(SECOND, env.env_hora_fin, CAST(env.env_fecha_programada AS DATETIME)) 
-						  THEN env.env_codigo 
-						END
-					  ) / NULLIF(COUNT(*), 0) AS Porcentaje_Cumplimiento
-	FROM
-		CHRISTIAN_Y_LOS_MAKINSONS.BI_ENVIOS env
-		JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION U ON env.env_nro_cliente = U.ubi_id
-	GROUP BY
-		YEAR(env.env_fecha_programada),
-		MONTH(env.env_fecha_programada),
-		U.ubi_localidad
+		CAST(
+			SUM(E.env_cant_cumplidos) * 1.0 / SUM(E.env_cant_total) * 100 
+			AS DECIMAL(10, 2)
+		) AS Porcentaje_Cumplimiento_Envios,
+		E.env_sucursal_id,
+		T.tiempo_anio,
+		T.tiempo_mes
+	FROM 
+		CHRISTIAN_Y_LOS_MAKINSONS.BI_ENVIOS E
+	JOIN 
+		CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO T
+		ON T.tiempo_id = E.env_tiempo_id
+	GROUP BY 
+		E.env_sucursal_id,
+		T.tiempo_anio,
+		T.tiempo_mes;
 GO
+
+--SELECT * FROM V_PORCENTAJE_CUMPLIMIENTO_ENVIOS;
+--GO
 
 ----------------------------------------
 
---ENVIOS_POR_RANGO_ETARIO
---Cantidad de env�os por rango etario de clientes para cada cuatrimestre de cada a�o.
+--VISTA 8: ENVIOS_POR_RANGO_ETARIO
+--Cantidad de envios por rango etario de clientes para cada cuatrimestre de cada anio.
 
---CREATE VIEW ENVIOS_POR_RANGO_ETARIO AS
---SELECT * FROM TABLA123;
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_ENVIOS_POR_RANGO_ETARIO AS
-SELECT
-    T.tiempo_cuatrimestre,
-    R.rango_etario,
-    COUNT(*) AS cantidad_envios
-FROM
-    CHRISTIAN_Y_LOS_MAKINSONS.BI_ENVIOS E
-JOIN
-    CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CLIENTES C ON E.env_nro_cliente = C.clie_codigo
-JOIN
-    CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO R ON C.clie_rango_etario = R.rango_etario_id
-JOIN
-    CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO T ON (YEAR(E.env_fecha_hora_entrega) = T.tiempo_anio
-        AND (
-            CASE
-                WHEN MONTH(E.env_fecha_hora_entrega) BETWEEN 1 AND 3 THEN 1
-                WHEN MONTH(E.env_fecha_hora_entrega) BETWEEN 4 AND 6 THEN 2
-                WHEN MONTH(E.env_fecha_hora_entrega) BETWEEN 7 AND 9 THEN 3
-                WHEN MONTH(E.env_fecha_hora_entrega) BETWEEN 10 AND 12 THEN 4
-            END
-        ) = T.tiempo_cuatrimestre)
-GROUP BY
-    T.tiempo_cuatrimestre,
-    R.rango_etario
+	SELECT
+		T.tiempo_anio,
+		T.tiempo_cuatrimestre,
+		R.rango_etario,
+		COUNT(*) AS Cantidad_Envios		
+	FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_ENVIOS E
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO T
+		ON T.tiempo_id = E.env_tiempo_id
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO R
+		ON R.rango_etario_id = E.env_rango_etario_clie
+	GROUP BY rango_etario, tiempo_cuatrimestre, tiempo_anio
 GO
+
 ----------------------------------------
 
 --VISTA 9: Localidades con mayor costo de env�o
@@ -873,81 +748,49 @@ GO
 -- GO
 
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_LOCALIDADES_MAYOR_COSTO_ENVIO AS
-	WITH CostosPorLocalidad AS (
-		SELECT
-			U.ubi_localidad AS Localidad,
-			SUM(env.env_costo) AS Costo_Total_Envio
-		FROM
-			CHRISTIAN_Y_LOS_MAKINSONS.BI_ENVIOS env
-			JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CLIENTES C ON env.env_nro_cliente = C.clie_codigo
-			JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION U ON C.clie_ubicacion = U.ubi_id
-		GROUP BY
-			U.ubi_localidad
-	)
-	SELECT
-		Localidad,
-		Costo_Total_Envio
-	FROM
-		(
-			SELECT
-				Localidad,
-				Costo_Total_Envio,
-				ROW_NUMBER() OVER (ORDER BY Costo_Total_Envio DESC) AS Orden
-			FROM
-				CostosPorLocalidad
-		) AS RankedCostos
-	WHERE
-		Orden <= 5;
+	SELECT TOP 5
+		U.ubi_localidad,
+		E.env_costo_total
+	FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_ENVIOS E
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_UBICACION U
+		ON U.ubi_id = E.env_ubi_id
 GO
+
 ----------------------------------------
 
-
 --VISTA 10: SUCURSALES_MAYOR_PAGOS_CUOTAS
---Las 3 sucursales con el mayor importe de pagos en cuotas, seg�n el medio de pago,
---mes y a�o. Se calcula sumando los importes totales de todas las ventas en cuotas.
+--Las 3 sucursales con el mayor importe de pagos en cuotas, segun el medio de pago,
+--mes y anio. Se calcula sumando los importes totales de todas las ventas en cuotas.
 
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_SUCURSALES_MAYOR_PAGOS_CUOTAS AS
-WITH SucursalesOrdenadas AS (
-    SELECT 
-        T.pago_tarj_anio AS Anio,
-        T.pago_tarj_mes AS Mes,
-        T.pago_tarj_sucursal,
-        T.pago_tarj_medio_pago,
-        SUM(T.pago_tarj_monto_total) AS MontoTotal,
-        ROW_NUMBER() OVER (PARTITION BY T.pago_tarj_anio, T.pago_tarj_mes, T.pago_tarj_medio_pago ORDER BY SUM(T.pago_tarj_monto_total) DESC) AS RN
-    FROM 
-        CHRISTIAN_Y_LOS_MAKINSONS.DIM_BI_PAGOS_TARJETA T
-    GROUP BY
-        T.pago_tarj_anio,
-        T.pago_tarj_mes,
-        T.pago_tarj_sucursal,
-        T.pago_tarj_medio_pago
-)
-SELECT 
-    Anio,
-    Mes,
-    pago_tarj_sucursal,
-    pago_tarj_medio_pago,
-    MontoTotal
-FROM 
-    SucursalesOrdenadas
-WHERE 
-    RN <= 3;
+	SELECT TOP 3
+		S.suc_nombre,
+		V.total_importe_cuotas,
+		MP.mp_detalle,
+		T.tiempo_mes,
+		T.tiempo_anio
+	FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_VENTAS V
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL S
+		ON S.suc_id = V.sucursal_id
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_MEDIOS_PAGO MP
+		ON MP.mp_cod = V.medio_pago_id
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO T
+		ON T.tiempo_id = V.tiempo_id
 GO
 
---SELECT * FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_PAGOS_TARJETA
 ----------------------------------------
 
 --VISTA 11: PROMEDIO_IMPORTE_CUOTA_POR_RANGO_ETARIO
---Promedio de importe de la cuota en funci�n del rango etario del cliente.
+--Promedio de importe de la cuota en funcion del rango etario del cliente.
 
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PROMEDIO_IMPORTE_CUOTA_POR_RANGO_ETARIO AS
 	SELECT
        RE.rango_etario,
 	   CAST(SUM(V.total_venta) AS DECIMAL(18, 2)) / CAST(SUM(V.total_cuotas) AS DECIMAL(18, 2)) AS Promedio_Valor_Cuota
-FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_VENTAS V
-JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO RE ON V.rango_cliente_id = RE.rango_etario_id
-GROUP BY RE.rango_etario;
+	FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_VENTAS V
+	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO RE ON V.rango_cliente_id = RE.rango_etario_id
+	GROUP BY RE.rango_etario;
+GO
 
 ----------------------------------------
 
@@ -966,4 +809,3 @@ CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_DESCUENTOS_MEDIOS_PAGO AS
     JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_MEDIOS_PAGO ON D.medio_pago_id = BI_DIM_MEDIOS_PAGO.mp_cod
     JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO ON D.tiempo_id = BI_DIM_TIEMPO.tiempo_id
 GROUP BY tiempo_cuatrimestre, mp_detalle;
-
