@@ -487,6 +487,7 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_VENTAS (
     total_descuento DECIMAL(18,2) NOT NULL,
 	promedio_cuotas DECIMAL(18, 2),
     total_pagos_cuotas INT NOT NULL,
+    total_cuotas INT NOT NULL,
 	total_cantidad_productos INT NOT NULL,
     total_cantidad_ventas INT NOT NULL
 );
@@ -508,7 +509,8 @@ CREATE TABLE CHRISTIAN_Y_LOS_MAKINSONS.BI_DESCUENTOS (
     total_importe DECIMAL(16, 2) not null,
 	categoria_id INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CATEGORIAS(cat_id),
     sucursal_id INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL(suc_id),
-    tiempo_id INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO(tiempo_id)
+    tiempo_id INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO(tiempo_id),
+    medio_pago_id INT FOREIGN KEY REFERENCES CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_MEDIOS_PAGO(mp_cod)
 )
 GO
 
@@ -530,7 +532,8 @@ BEGIN
 		promedio_cuotas,
 		total_cantidad_productos,
         total_pagos_cuotas,
-        total_cantidad_ventas
+        total_cantidad_ventas,
+        total_cuotas
 	)
 SELECT
     TIE.tiempo_id,
@@ -546,7 +549,8 @@ SELECT
     AVG(PAG.pago_cant_cuotas) promedio_cant_cuotas,
     SUM(IT.cantidad) total_productos,
     COUNT(CASE WHEN PAG.pago_cant_cuotas > 1 THEN 1 END),
-    COUNT(*)
+    COUNT(*),
+    SUM(COALESCE(PAG.pago_cant_cuotas, 0))
 FROM CHRISTIAN_Y_LOS_MAKINSONS.Ticket TIC
 JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO TIE
     ON YEAR(TIC.ticket_fecha_hora_venta) = TIE.tiempo_anio
@@ -650,14 +654,16 @@ BEGIN
         categoria_id,
         sucursal_id,
         tiempo_id,
-        total_importe)
+        total_importe,
+        medio_pago_id)
     SELECT
         SUM(T.ticket_total_descuento_aplicado),
         SUM(T.ticket_total_descuento_aplicado_mp),
         categoria_cod,
         S.suc_numero,
         TI.tiempo_id,
-        SUM(T.ticket_total_ticket)
+        SUM(T.ticket_total_ticket),
+        MP.mp_cod
     FROM
         CHRISTIAN_Y_LOS_MAKINSONS.Ticket T
     JOIN CHRISTIAN_Y_LOS_MAKINSONS.Items_Ticket IT on T.ticket_id = IT.ticket_numero
@@ -669,7 +675,9 @@ BEGIN
     JOIN CHRISTIAN_Y_LOS_MAKINSONS.Caja CA on T.ticket_caja_id = CA.id_caja
     JOIN CHRISTIAN_Y_LOS_MAKINSONS.Sucursal S on CA.id_sucursal = S.suc_numero
     JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO TI on YEAR(T.ticket_fecha_hora_venta) = TI.tiempo_anio AND MONTH(T.ticket_fecha_hora_venta) = TI.tiempo_mes
-    GROUP BY categoria_cod, S.suc_numero, TI.tiempo_id;
+    JOIN CHRISTIAN_Y_LOS_MAKINSONS.Pago PA ON T.ticket_id = PA.pago_nro_ticket
+    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_MEDIOS_PAGO MP ON MP.mp_cod = PA.pago_medio
+    GROUP BY categoria_cod, S.suc_numero, TI.tiempo_id, MP.mp_cod;
 END
 GO
 
@@ -912,83 +920,14 @@ GO
 
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_CATEGORIAS_MAYOR_DESCUENTO_PROMOCIONES AS
     SELECT TOP 3
-        SUM(D.descuento_por_promociones_aplicado),
+        SUM(D.descuento_por_promociones_aplicado) total_descuento,
+        cat_detalle,
         T.tiempo_mes mes
     FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_DESCUENTOS D
     JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO T ON D.tiempo_id = T.tiempo_id
-
-GROUP BY T.tiempo_mes;
-
-
-CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_CATEGORIAS_MAYOR_DESCUENTO_PROMOCIONES AS
-	SELECT * FROM (
-    SELECT TOP 3
-        T.tiempo_cuatrimestre,
-        C.cat_id,
-        MAX(C.monto_descuento) AS Mayor_monto_descuento
-    FROM
-        CHRISTIAN_Y_LOS_MAKINSONS.BI_DESCUENTOS_POR_CATEGORIA_SEGUN_FECHA C
-    INNER JOIN
-        CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO T ON C.desc_cate_anio = T.tiempo_anio
-                                                   AND C.desc_cate_mes = T.tiempo_mes
-    WHERE
-        T.tiempo_cuatrimestre = 1
-    GROUP BY
-        T.tiempo_cuatrimestre,
-        C.cat_id
-
-    UNION ALL
-
-    SELECT TOP 3
-        T.tiempo_cuatrimestre,
-        C.cat_id,
-        MAX(C.monto_descuento) AS Mayor_monto_descuento
-    FROM
-        CHRISTIAN_Y_LOS_MAKINSONS.BI_DESCUENTOS_POR_CATEGORIA_SEGUN_FECHA C
-    INNER JOIN
-        CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO T ON C.desc_cate_anio = T.tiempo_anio
-                                                   AND C.desc_cate_mes = T.tiempo_mes
-    WHERE
-        T.tiempo_cuatrimestre = 2
-    GROUP BY
-        T.tiempo_cuatrimestre,
-        C.cat_id
-
-    UNION ALL
-
-    SELECT TOP 3
-        T.tiempo_cuatrimestre,
-        C.cat_id,
-        MAX(C.monto_descuento) AS Mayor_monto_descuento
-    FROM
-        CHRISTIAN_Y_LOS_MAKINSONS.BI_DESCUENTOS_POR_CATEGORIA_SEGUN_FECHA C
-    INNER JOIN
-        CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO T ON C.desc_cate_anio = T.tiempo_anio
-                                                   AND C.desc_cate_mes = T.tiempo_mes
-    WHERE
-        T.tiempo_cuatrimestre = 3
-    GROUP BY
-        T.tiempo_cuatrimestre,
-        C.cat_id
-
-    UNION ALL
-
-    SELECT TOP 3
-        T.tiempo_cuatrimestre,
-        C.cat_id,
-        MAX(C.monto_descuento) AS Mayor_monto_descuento
-    FROM
-        CHRISTIAN_Y_LOS_MAKINSONS.BI_DESCUENTOS_POR_CATEGORIA_SEGUN_FECHA C
-    INNER JOIN
-        CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO T ON C.desc_cate_anio = T.tiempo_anio
-                                                   AND C.desc_cate_mes = T.tiempo_mes
-    WHERE
-        T.tiempo_cuatrimestre = 4
-    GROUP BY
-        T.tiempo_cuatrimestre,
-        C.cat_id
-) AS CombinedResults;
-GO
+    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CATEGORIAS C ON D.categoria_id = C.cat_id
+GROUP BY T.tiempo_mes, cat_detalle
+ORDER BY total_descuento DESC;
 
 --CREATE VIEW CATEGORIAS_MAYOR_DESCUENTO_PROMOCIONES AS
 --SELECT * FROM TABLA123;
@@ -1143,23 +1082,19 @@ GO
 --Promedio de importe de la cuota en funci�n del rango etario del cliente.
 
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PROMEDIO_IMPORTE_CUOTA_POR_RANGO_ETARIO AS
-    SELECT
-       V.venta_clie_rango,
-       AVG(V.venta_total/ V.venta_total) promedio_valor_cuota
-    FROM
-      CHRISTIAN_Y_LOS_MAKINSONS.BI_VENTAS V
-	JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO RE
-	ON	V.venta_clie_rango = RE.rango_etario_id
-	WHERE V.venta_cuotas IS NOT NULL
-    GROUP BY V.venta_clie_rango
-GO
+	SELECT
+       RE.rango_etario,
+	   CAST(SUM(V.total_venta) AS DECIMAL(18, 2)) / CAST(SUM(V.total_cuotas) AS DECIMAL(18, 2)) AS Promedio_Valor_Cuota
+FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_VENTAS V
+JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO RE ON V.rango_cliente_id = RE.rango_etario_id
+GROUP BY RE.rango_etario;
 
 ----------------------------------------
 
---VISTA 12: PORCENTAJE_DESCUENTO_MEDIOS_PAGO
---Porcentaje de descuento aplicado por cada medio de pago en funci�n del valor
---de total de pagos sin el descuento, por cuatrimestre. Es decir, total de descuentos
---sobre el total de pagos m�s el total de descuentos.
+-- VISTA 12: PORCENTAJE_DESCUENTO_MEDIOS_PAGO
+-- Porcentaje de descuento aplicado por cada medio de pago en función del valor
+-- de total de pagos sin el descuento, por cuatrimestre. Es decir, total de descuentos
+-- sobre el total de pagos más el total de descuentos.
 
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_DESCUENTOS_MEDIOS_PAGO AS
     SELECT
@@ -1174,4 +1109,15 @@ CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_DESCUENTOS_MEDIOS_PAGO AS
     JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO ti ON t.ticket_tiempo = ti.tiempo_id
 GROUP BY mp.mp_detalle, ti.tiempo_cuatrimestre, ti.tiempo_anio
 GO
+
+CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_DESCUENTOS_MEDIOS_PAGO AS
+    SELECT
+        CAST(SUM(D.descuento_por_medio_de_pago) AS DECIMAL) /
+        CAST(SUM(D.total_importe) AS DECIMAL) * 100 porcentaje_descuentos_aplicados,
+        BI_DIM_TIEMPO.tiempo_cuatrimestre,
+        BI_DIM_MEDIOS_PAGO.mp_detalle
+    FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_DESCUENTOS D
+    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_MEDIOS_PAGO ON D.medio_pago_id = BI_DIM_MEDIOS_PAGO.mp_cod
+    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO ON D.tiempo_id = BI_DIM_TIEMPO.tiempo_id
+GROUP BY tiempo_cuatrimestre, mp_detalle;
 
