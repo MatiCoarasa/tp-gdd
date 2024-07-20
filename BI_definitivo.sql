@@ -683,10 +683,12 @@ GO
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_CATEGORIAS_MAYOR_DESCUENTO_PROMOCIONES AS
     SELECT TOP 3
         SUM(D.descuento_por_promociones_aplicado) AS Mayor_Desc_Aplicado,
-        T.tiempo_mes mes
+        T.tiempo_mes mes,
+        c.cat_detalle
     FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_DESCUENTOS D
     JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO T ON D.tiempo_id = T.tiempo_id
-	GROUP BY T.tiempo_mes;
+    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CATEGORIAS C ON D.categoria_id = C.cat_id
+	GROUP BY T.tiempo_mes, C.cat_detalle;
 GO
 
 --CREATE VIEW CATEGORIAS_MAYOR_DESCUENTO_PROMOCIONES AS
