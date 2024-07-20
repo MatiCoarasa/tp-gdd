@@ -687,9 +687,6 @@ GROUP BY
 	TI.tiempo_mes
 GO
 
---SELECT * FROM CHRISTIAN_Y_LOS_MAKINSONS.V_TICKET_PROMEDIO_MENSUAL;
---GO
-
 ----------------------------------------
 
 --VISTA 2: Cantidad Unidades Promedio
@@ -735,66 +732,6 @@ JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CAJAS C ON V.caja_id = C.caja_id
 JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO T ON V.tiempo_id = T.tiempo_id
 GROUP BY RE.rango_etario, C.caja_tipo, T.tiempo_cuatrimestre;
 
-
--- CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_ANUAL_VENTAS AS
--- 	WITH ventas_cuatrimestre AS (
--- 		SELECT
--- 			ti.tiempo_anio AS Anio,
--- 			ti.tiempo_cuatrimestre AS Cuatrimestre,
--- 			r.rango_etario AS [Rango Etario],
--- 			c.caja_tipo AS [Tipo de Caja],
--- 			COUNT(*) AS [Total Ventas Cuatrimestre]
--- 		FROM
--- 			CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS t
--- 			JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_EMPLEADOS e ON t.ticket_emp_legajo = e.emp_legajo
--- 			JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CAJAS c ON t.ticket_caja_id = c.caja_id
--- 		    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO r ON e.emp_rango_etario = r.rango_etario_id
--- 		    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO ti ON t.ticket_tiempo = ti.tiempo_id
--- 		GROUP BY
--- 			ti.tiempo_anio,
--- 			ti.tiempo_cuatrimestre,
--- 			r.rango_etario,
--- 			c.caja_tipo
--- 	),
--- 	ventas_anuales AS (
--- 		SELECT
--- 			ti.tiempo_anio AS anio,
--- 			r.rango_etario AS [Rango Etario],
--- 			c.caja_tipo,
--- 			COUNT(*) AS [Total Ventas Anuales]
--- 		FROM
--- 			CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS t
--- 			JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_EMPLEADOS e ON t.ticket_emp_legajo = e.emp_legajo
--- 			JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CAJAS c ON t.ticket_caja_id = c.caja_id
--- 		    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_RANGO_ETARIO r ON e.emp_rango_etario = r.rango_etario_id
--- 			JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO ti ON t.ticket_tiempo = ti.tiempo_id
--- 		GROUP BY
--- 			ti.tiempo_anio,
--- 			r.rango_etario,
--- 			c.caja_tipo
--- 	)
--- 	SELECT
--- 		vc.Anio,
--- 		vc.Cuatrimestre,
--- 		vc.[Rango Etario],
--- 		vc.[Tipo de Caja],
--- 		SUM(vc.[Total Ventas Cuatrimestre]) AS [Total Ventas Cuatrimestre],
--- 		SUM(va.[Total Ventas Anuales]) AS [Total Ventas Anuales],
--- 		SUM(vc.[Total Ventas Cuatrimestre]) * 100.0 / SUM(va.[Total Ventas Anuales]) AS [Porcentaje Ventas Cuatrimestre]
--- 	FROM
--- 		ventas_cuatrimestre vc
--- 		JOIN ventas_anuales va ON vc.Anio = va.anio AND vc.[Rango Etario] = va.[Rango Etario] AND vc.[Tipo de Caja] = va.caja_tipo
--- 	GROUP BY
--- 		vc.Anio,
--- 		vc.Cuatrimestre,
--- 		vc.[Rango Etario],
--- 		vc.[Tipo de Caja];
--- GO
-
-
---SELECT * FROM V_PORCENTAJE_ANUAL_VENTAS;
---GO
-
 ----------------------------------------
 
 --VISTA 4: VENTAS_POR_TURNO
@@ -830,7 +767,6 @@ GROUP BY
     D.turno_desc;
 GO
 
-
 ----------------------------------------
 
 --VISTA 5: Porcentaje de descuento aplicados
@@ -843,21 +779,6 @@ CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_DESCUENTO_APLICADO AS
     FROM CHRISTIAN_Y_LOS_MAKINSONS.BI_DESCUENTOS D
     JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO T ON D.tiempo_id = T.tiempo_id
 GROUP BY T.tiempo_mes;
-
-CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_DESCUENTO_APLICADO AS
-	SELECT
-		ti.tiempo_anio AS "A�o",
-		ti.tiempo_mes AS "Mes",
-		SUM(t.ticket_total_descuento_aplicado) AS "Total Descuentos",
-		SUM(t.ticket_total_ticket) AS "Total Ventas",
-		(SUM(t.ticket_total_descuento_aplicado) / NULLIF(SUM(t.ticket_total_ticket), 0)) * 100 AS "Porcentaje Descuento"
-	FROM
-		CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS t
-	    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO ti ON t.ticket_tiempo = ti.tiempo_id
-	GROUP BY
-		ti.tiempo_anio,
-		ti.tiempo_mes
-GO
 
 
 ----------------------------------------
@@ -877,13 +798,7 @@ CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_CATEGORIAS_MAYOR_DESCUENTO_PROMOCIONES A
 GROUP BY T.tiempo_mes, cat_detalle
 ORDER BY total_descuento DESC;
 
---CREATE VIEW CATEGORIAS_MAYOR_DESCUENTO_PROMOCIONES AS
---SELECT * FROM TABLA123;
-
 ----------------------------------------
-
---PENDIENTE
-
 
 --VISTA 7: Porcentaje de cumplimiento de env�os
 --Porcentaje de cumplimiento de env�os en los tiempos programados por sucursal por a�o/mes (desv�o)
@@ -916,9 +831,6 @@ CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_CUMPLIMIENTO_ENVIOS AS
 		MONTH(env.env_fecha_programada),
 		U.ubi_localidad
 GO
-
---SELECT * FROM V_PORCENTAJE_CUMPLIMIENTO_ENVIOS;
---GO
 
 ----------------------------------------
 
@@ -1043,20 +955,6 @@ GROUP BY RE.rango_etario;
 -- Porcentaje de descuento aplicado por cada medio de pago en función del valor
 -- de total de pagos sin el descuento, por cuatrimestre. Es decir, total de descuentos
 -- sobre el total de pagos más el total de descuentos.
-
-CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_DESCUENTOS_MEDIOS_PAGO AS
-    SELECT
-        mp.mp_detalle,
-        SUM(p.pago_descuento) / (SUM(p.pago_total) + SUM(p.pago_descuento)) * 100 porcentaje_descuentos,
-        ti.tiempo_cuatrimestre,
-        ti.tiempo_anio
-    FROM
-        CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_MEDIOS_PAGO mp
-    JOIN CHRISTIAN_Y_LOS_MAKINSONS.Pago p ON mp.mp_cod = p.pago_medio
-    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_TICKETS t ON p.pago_nro_ticket = t.ticket_id
-    JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO ti ON t.ticket_tiempo = ti.tiempo_id
-GROUP BY mp.mp_detalle, ti.tiempo_cuatrimestre, ti.tiempo_anio
-GO
 
 CREATE VIEW CHRISTIAN_Y_LOS_MAKINSONS.V_PORCENTAJE_DESCUENTOS_MEDIOS_PAGO AS
     SELECT
