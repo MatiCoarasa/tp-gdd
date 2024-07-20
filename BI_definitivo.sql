@@ -429,7 +429,7 @@ JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TIEMPO TIE
     ON YEAR(TIC.ticket_fecha_hora_venta) = TIE.tiempo_anio
     AND MONTH(TIC.ticket_fecha_hora_venta) = TIE.tiempo_mes
 JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_TURNO TUR
-    ON TUR.turno_desc = CHRISTIAN_Y_LOS_MAKINSONS.ObtenerRangoHorario(TIC.ticket_fecha_hora_venta)
+    ON TUR.turno_desc = CHRISTIAN_Y_LOS_MAKINSONS.ObtenerTurno(TIC.ticket_fecha_hora_venta)
 JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_CAJAS CAJ
     ON CAJ.caja_id = TIC.ticket_caja_id
 JOIN CHRISTIAN_Y_LOS_MAKINSONS.BI_DIM_SUCURSAL SUC
